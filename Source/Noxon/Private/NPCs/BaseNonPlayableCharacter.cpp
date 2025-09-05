@@ -19,6 +19,7 @@ void ABaseNonPlayableCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	
 }
 
 // Called every frame

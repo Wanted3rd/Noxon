@@ -5,3 +5,4 @@
 
 IMPLEMENT_PRIMARY_GAME_MODULE( FDefaultGameModuleImpl, Noxon, "Noxon" );
 
+DEFINE_LOG_CATEGORY(CustomLogInfo)
