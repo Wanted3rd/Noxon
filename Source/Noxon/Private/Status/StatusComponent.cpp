@@ -13,5 +13,26 @@ UStatusComponent::UStatusComponent()
 	// ...
 }
 
+bool UStatusComponent::RegStatus(FName Name, float Current, float Max, bool bActive)
+{
+	// Check has already exist
+	// UE_LOG(LogTemp, Warning, TEXT("Already Exist Status"));
+	
+	StatusMap.Add(Name, FStatus(Max, Current, bActive));
+	if (StatusMap.Contains(Name))
+		return true;
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Status Error"));
+		return false;
+	}
+	
+}
+
+FStatus UStatusComponent::GetStatus(FName Name) const
+{
+	return *(StatusMap.Find(Name));
+}
+
 
 
