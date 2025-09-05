@@ -13,4 +13,14 @@ UCLASS()
 class NOXON_API UBaseNPCManager : public UObject
 {
 	GENERATED_BODY()
+	
+protected:
+	UFUNCTION()
+	virtual void PullPositionsFromWorld() PURE_VIRTUAL(UBaseNPCManager::PullPositionsFromWorld(), );
+	UFUNCTION()
+	virtual void SaveToDataTable() PURE_VIRTUAL(UBaseNPCManager::PullPositionsFromWorld(), );
+
+protected:
+	UPROPERTY(EditAnywhere)
+	TArray<ACharacter*> npcArr;
 };

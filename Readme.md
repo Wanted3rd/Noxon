@@ -8,15 +8,17 @@
 
 ### Branch 작성
 
-1. Main Branch가 Release Branch 입니다.
+1. "Main Branch" 가 "Release Branch" 입니다.
 
-2. "대분류" 기준으로 `[대분류]` 의 형태로 Branch를 만듭니다.
+2. "Dev Branch" 가 개발용 Branch 입니다.
 
-3. "중분류" 기준으로 역할분담이 되어 있으므로, `[대분류]/[대분류]-[중분류]` 의 형태로 Branch를 만들어 작업합니다.
+3. "대분류" 기준으로 `[대분류]` 의 형태로 Branch를 만듭니다.
 
-4. "소분류" 로 Branch를 만드는 것은 개인의 판단에 맡깁니다.
+4. "중분류" 기준으로 역할분담이 되어 있으므로, `[대분류]/[대분류]-[중분류]` 의 형태로 Branch를 만들어 작업합니다.
 
-5. 하위 Branch를 상위 Branch로 Merge 할 때는 무조건 아래의 사항들을 체크 후 Merge 합니다.
+5. "소분류" 로 Branch를 만드는 것은 개인의 판단에 맡깁니다.
+
+6. 하위 Branch를 상위 Branch로 Merge 할 때는 무조건 아래의 사항들을 체크 후 Merge 합니다.
     - Build가 되는가. (Compile Successed)
     - Begin Play가 되는가.
     - Runtime Error는 예측 어려운 부분이므로 필수는 아니지만, 경계만 부탁 드립니다.
