@@ -77,12 +77,24 @@ void AMainPlayer::MoveInput(const struct FInputActionValue& value)
 	direction.Y = v.Y;
 }
 
+void AMainPlayer::LookInput(const struct FInputActionValue& value)
+{
+	FVector2d v = value.Get<FVector2d>();
+	
+	
+}
+
+
 void AMainPlayer::PlayerControlCalculate()
 {
-	FVector CurLocation = GetActorLocation();
-	SetActorLocation(CurLocation + direction * speed * GetWorld()->GetDeltaSeconds());
-	direction = FVector::ZeroVector;
+	// FVector CurLocation = GetActorLocation();
+	// SetActorLocation(CurLocation + direction * speed * GetWorld()->GetDeltaSeconds());
 
+	//월드 좌표인 direction 입력값을 현재 컨트롤 로테이션 값에 맞게 변환
+	direction = FTransform(GetControlRotation()).TransformVector(direction);
+	AddMovementInput(direction);
+	
+	direction = FVector::ZeroVector;
 }
 
 

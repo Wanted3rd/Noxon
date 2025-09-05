@@ -39,14 +39,18 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	class UInputAction* ia_move;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	class UInputAction* ia_look;
+
 	
 public:
 	//bindingFunction
 	UFUNCTION()
 	void MoveInput(const struct FInputActionValue& value);
 
-
-
+	UFUNCTION()
+	void LookInput(const struct FInputActionValue& value);
 
 public:
 	UFUNCTION()
