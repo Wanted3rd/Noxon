@@ -6,6 +6,16 @@
 #include "GameFramework/Character.h"
 #include "BaseNonPlayableCharacter.generated.h"
 
+UENUM(BlueprintType, meta=(Bitmask))
+enum class ERelationship : uint8
+{
+	Default = 0 << 0 UMETA(Hidden),
+	Hostile = 1 << 0,
+	Neutral = 1 << 1,
+	Friendly = 1 << 2,
+	End = 1 << 3 UMETA(Hidden)
+};
+
 UCLASS()
 class NOXON_API ABaseNonPlayableCharacter : public ACharacter
 {
@@ -15,15 +25,26 @@ public:
 	ABaseNonPlayableCharacter();
 
 	virtual void Tick(float DeltaTime) override;
+
+#pragma region Target
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE AActor* GetTargetActor() {return targetActor;}
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE void SetTargetActor(AActor* inTarget) {targetActor = inTarget;}
+
+#pragma endregion Target
 	
 protected:
 	virtual void BeginPlay() override;
 
 public:
+	ERelationship relationship = ERelationship::Hostile;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Anim", meta=(AllowPrivateAccess=true))
 	TSubclassOf<UAnimInstance> animFactory;
 	
-	
+private:
+	UPROPERTY()
+	TObjectPtr<AActor> targetActor = nullptr;
 };

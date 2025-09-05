@@ -11,7 +11,11 @@ ABaseNonPlayableCharacter::ABaseNonPlayableCharacter()
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	animFactory = FinderHelper::GetClassFromConstructor<>()
+	animFactory = FinderHelper::GetClassFromConstructor<UAnimInstance>(TEXT("/Game/Assets/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed_C"));
+	if (animFactory != nullptr)
+	{
+		GetMesh()->SetAnimInstanceClass(animFactory);
+	}
 }
 
 // Called when the game starts or when spawned
