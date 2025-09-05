@@ -6,6 +6,8 @@
 #include "Engine/GameInstance.h"
 #include "NoxonGameInstance.generated.h"
 
+#define GI GetGameInstance<UNoxonGameInstance>();
+
 /**
  * 
  */
