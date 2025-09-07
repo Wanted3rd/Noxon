@@ -6,6 +6,13 @@
 #include "BaseNonPlayableCharacter.h"
 #include "Enemy.generated.h"
 
+#pragma region Forward Declarations
+
+class UFSMComponent;
+
+#pragma endregion Forward Declarations
+
+
 UCLASS()
 class NOXON_API AEnemy : public ABaseNonPlayableCharacter
 {
@@ -14,12 +21,21 @@ class NOXON_API AEnemy : public ABaseNonPlayableCharacter
 public:
 	// Sets default values for this character's properties
 	AEnemy();
+	virtual void Tick(float DeltaTime) override;
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	virtual void PostInitializeComponents() override;
+
+private:
+	virtual void RegisterFSMFunctions();
+
+
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Components")
+	TObjectPtr<UFSMComponent> fsmComponent;
+
+	// item
 };

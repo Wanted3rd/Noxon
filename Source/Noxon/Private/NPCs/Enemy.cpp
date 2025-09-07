@@ -3,25 +3,43 @@
 
 #include "NPCs/Enemy.h"
 
+#include "NPCs/Components/FSMInterface.h"
+#include "NPCs/Components/FSMComponent.h"
+#include "Utility/FindHelper.h"
 
-// Sets default values
+
 AEnemy::AEnemy()
 {
-	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	relationship = ERelationship::Hostile;
+
+	USkeletalMesh* mesh = BASE_SKM;
+	if (IsValid(mesh))
+	{
+		GetMesh()->SetSkeletalMesh(mesh);
+	}
+	
+	fsmComponent = CreateDefaultSubobject<UFSMComponent>(TEXT("FSM"));
 	
 }
 
-// Called when the game starts or when spawned
+void AEnemy::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	RegisterFSMFunctions();
+}
+
 void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 	
 }
 
-// Called every frame
 void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void AEnemy::RegisterFSMFunctions()
+{
 }

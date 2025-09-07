@@ -10,8 +10,8 @@ UENUM(BlueprintType, meta=(Bitmask))
 enum class ERelationship : uint8
 {
 	Default = 0 << 0 UMETA(Hidden),
-	Hostile = 1 << 0,
-	Neutral = 1 << 1,
+	Neutral = 1 << 0,
+	Hostile = 1 << 1,
 	Friendly = 1 << 2,
 	End = 1 << 3 UMETA(Hidden)
 };
