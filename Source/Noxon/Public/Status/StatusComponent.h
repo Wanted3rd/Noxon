@@ -68,7 +68,7 @@ public:
     
 protected:
     
-    UPROPERTY()
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TMap<FName, FStatus> StatusMap;
 
     // 통지 헬퍼(인터페이스만 사용, 델리게이트 없음)
