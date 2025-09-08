@@ -6,23 +6,45 @@
 #include "GameFramework/Character.h"
 #include "BaseNonPlayableCharacter.generated.h"
 
+UENUM(BlueprintType, meta=(Bitmask))
+enum class ERelationship : uint8
+{
+	Default = 0 << 0 UMETA(Hidden),
+	Hostile = 1 << 0,
+	Neutral = 1 << 1,
+	Friendly = 1 << 2,
+	End = 1 << 3 UMETA(Hidden)
+};
+
 UCLASS()
 class NOXON_API ABaseNonPlayableCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	ABaseNonPlayableCharacter();
 
+	virtual void Tick(float DeltaTime) override;
+
+#pragma region Target
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE AActor* GetTargetActor() {return targetActor;}
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE void SetTargetActor(AActor* inTarget) {targetActor = inTarget;}
+
+#pragma endregion Target
+	
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	ERelationship relationship = ERelationship::Hostile;
 
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Anim", meta=(AllowPrivateAccess=true))
+	TSubclassOf<UAnimInstance> animFactory;
+	
+private:
+	UPROPERTY()
+	TObjectPtr<AActor> targetActor = nullptr;
 };
