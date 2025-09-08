@@ -10,6 +10,7 @@
 
 AEnemy::AEnemy()
 {
+
 	PrimaryActorTick.bCanEverTick = true;
 	relationship = ERelationship::Hostile;
 
@@ -42,4 +43,24 @@ void AEnemy::Tick(float DeltaTime)
 
 void AEnemy::RegisterFSMFunctions()
 {
+	fsmComponent->RegisterStateFunction(EFSMStatesMap::Idle, [&](float DeltaTime) -> void
+	{
+		
+	});
+	fsmComponent->RegisterStateFunction(EFSMStatesMap::Moving, [&](float DeltaTime) -> void
+	{
+		
+	});
+	fsmComponent->RegisterStateFunction(EFSMStatesMap::Weaving, [&](float DeltaTime) -> void
+	{
+		
+	});
+	fsmComponent->RegisterStateFunction(EFSMStatesMap::Attack, [&](float DeltaTime) -> void
+	{
+		
+	});
+	fsmComponent->RegisterStateFunction(EFSMStatesMap::Idle, [&](float DeltaTime) -> void
+	{
+		
+	});
 }

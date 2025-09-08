@@ -38,14 +38,13 @@ void UFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorCo
 
 	for (uint8 state = 0; state < EFSMStatesMap::End; ++state)
 	{
-		if (IsActivated(currentStates, state))
+		if (!stateFunctors[state].IsSet())
 		{
-			if (stateFunctors[state].IsSet())
-			{
-				stateFunctors[state](DeltaTime);
-				continue;
-			}
 			LOG_TEXT(TEXT("%s is not Bound"), *(GetStateName(state).ToString()));
+		}
+		else if (CheckBitFlagIsMasked(currentStates, state) && !CheckBitFlagIsMasked(lockedStates, state))
+		{
+			stateFunctors[state](DeltaTime);
 		}
 	}
 }
@@ -56,9 +55,20 @@ void UFSMComponent::RegisterStateFunction(const EFSMStatesMap& state, TFunction<
 	stateFunctors[state] = function;
 }
 
-void UFSMComponent::UnregisterStateFunction(const EFSMStatesMap& state, TFunction<void(float)> function)
+void UFSMComponent::UnregisterStateFunction(const EFSMStatesMap& state)
 {
 	stateFunctors[state].Reset();
+	stateFunctors[state] = nullptr;
+}
+
+void UFSMComponent::ActivateState(const EFSMStatesMap& state)
+{
+	if (CheckBitFlagIsMasked(currentStates, state))
+	{
+		return;
+	}
+	currentStates |= state;
+	stateStarts[state].ExecuteIfBound();
 }
 
 void UFSMComponent::DeactivateState(const EFSMStatesMap& state, const float& cooldownTime)
@@ -66,16 +76,18 @@ void UFSMComponent::DeactivateState(const EFSMStatesMap& state, const float& coo
 	if (cooldownTime > 0.f)
 	{
 		lockedStates |= state;
-		GetWorld()->GetTimerManager().SetTimer(lockTimer, [&]()
+		GetWorld()->GetTimerManager().SetTimer(lockTimer, [&, state]()
 		{
-			lockedStates &= ~state;  // stack 에서 계속 잡게됨. 질문하고 광명찾자.
+			lockedStates &= ~state;
 		}, cooldownTime, false);
 	}
 	currentStates &= ~state;
-	if (currentStates > EDefaultsStates::Default)
+	if (currentStates == EDefaultsStates::Default
+		|| currentStates == EDefaultsStates::End)
 	{
 		currentStates = EDefaultsStates::Idle;
 	}
+	stateExits[state].ExecuteIfBound();
 }
 
 

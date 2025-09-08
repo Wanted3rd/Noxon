@@ -38,4 +38,6 @@ protected:
 	TObjectPtr<UFSMComponent> fsmComponent;
 
 	// item
+
+	// coord in worldMap (table, rand(0~row end) )
 };
