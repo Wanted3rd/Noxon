@@ -35,14 +35,14 @@ struct NOXON_API FStatus
 {
     GENERATED_BODY()
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Health")
-    float Max = 100.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
+    float Max;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Health")
-    float Current = 100.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
+    float Current;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Health")
-    bool bActive = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
+    bool bActive;
 };
 
 UCLASS(ClassGroup=(Status), meta=(BlueprintSpawnableComponent))
@@ -54,15 +54,22 @@ public:
     UStatusComponent();
     
     UFUNCTION(BlueprintCallable, Category="Status")
-    bool RegStatus(FName Name, float Current, float Max, bool bActive = true);
+    bool RegStatus(FName Name, float _Max = 100.f, float _Current = -1.f, bool _bActive = true);
 
     UFUNCTION(BlueprintPure, Category="Status")
     FStatus GetStatus(FName Name) const;
-    
 
+    UFUNCTION(BlueprintCallable, Category="Status")
+    void SetStatus(FName Name, float _Max = -1.f, float _Current = -1.f, bool NewActive = true);
+
+    UFUNCTION(BlueprintCallable, Category="Status")
+    bool ApplyStatusDelta(FName Name, float Delta);
+
+    
 protected:
-    // 내부 저장소: 값/범위/클램프 여부
-    UPROPERTY() TMap<FName, FStatus> StatusMap;
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TMap<FName, FStatus> StatusMap;
 
     // 통지 헬퍼(인터페이스만 사용, 델리게이트 없음)
     /*UFUNCTION() void NotifyOwner_StatusChanged(FName Attribute, float OldValue, float NewValue);
