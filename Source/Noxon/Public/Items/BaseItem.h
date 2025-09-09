@@ -17,10 +17,12 @@ struct FItemProperty
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FString description = "";
-
+	
 	// 스택 가능한 양
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	bool bQuantity = false;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	int maxQuantity = 0;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int quantity = 0;
 	// 내구도
