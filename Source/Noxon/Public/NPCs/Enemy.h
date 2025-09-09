@@ -9,6 +9,7 @@
 #pragma region Forward Declarations
 
 class UFSMComponent;
+class AHandItem;
 
 #pragma endregion Forward Declarations
 
@@ -38,6 +39,12 @@ protected:
 	TObjectPtr<UFSMComponent> fsmComponent;
 
 	// item
+	UPROPERTY(EditDefaultsOnly, Category = "Item")
+	TObjectPtr<AHandItem> handItem = nullptr;
 
 	// coord in worldMap (table, rand(0~row end) )
+
+private:
+	float time = 0.f;
+	uint8 count = 0;
 };

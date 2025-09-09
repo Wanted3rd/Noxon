@@ -15,4 +15,4 @@ DECLARE_LOG_CATEGORY_EXTERN(CustomLogInfo, Display, All)
 
 // ... = TEXT(fmt, value) | (ex) fmt: "%s" value: *FString("Hello World") 
 #define PRINT_TEXT(key, time, ...) \
-	GEngine->AddOnScreenDebugMessage(key, time, FColor::Purple, FString::Printf(##__VA_ARGS__));
+GEngine->AddOnScreenDebugMessage(key, time, FColor::Purple, FString::Printf(##__VA_ARGS__));

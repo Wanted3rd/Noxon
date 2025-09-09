@@ -17,10 +17,8 @@ class IItemAction
 	GENERATED_BODY()
 
 public:
-	UFUNCTION()
-	virtual void LeftAction();
-	UFUNCTION()
-	virtual void RightAction();
+	virtual void LeftAction() = 0;
+	virtual void RightAction() = 0;
 };
 
 
