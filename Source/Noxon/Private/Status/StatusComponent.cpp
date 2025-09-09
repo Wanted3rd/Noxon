@@ -77,6 +77,3 @@ bool UStatusComponent::ApplyStatusDelta(FName Name, float Delta)
 		return false;
 	}
 }
-
-
-
