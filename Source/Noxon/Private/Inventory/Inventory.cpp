@@ -20,3 +20,12 @@ void UInventory::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompo
 
 	
 }
+
+bool UInventory::GetSlot(int32 index, FItemSlot& outSlot) const
+{
+	if (Slots[index] == outSlot)
+	{
+		
+	}
+}
+
