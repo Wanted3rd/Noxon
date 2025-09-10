@@ -30,7 +30,10 @@ public:
 	// 이동 관련@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	float speed;
 	FVector direction;
-
+	float rot_yaw;
+	float rot_pitch;
+	bool bIsSprinting = false;
+	
 
 	
 	//Input Action - IA
@@ -39,15 +42,39 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	class UInputAction* ia_move;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	class UInputAction* ia_turn;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	class UInputAction* ia_lookUp;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	class UInputAction* ia_jump;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	class UInputAction* ia_sprint;
 	
 public:
 	//bindingFunction
 	UFUNCTION()
 	void MoveInput(const struct FInputActionValue& value);
 
+	UFUNCTION()
+	void TurnInput(const struct FInputActionValue& value);
 
+	UFUNCTION()
+	void LookUpInput(const struct FInputActionValue& value);
 
+	UFUNCTION()
+	void JumpInput(const struct FInputActionValue& value);
 
+	UFUNCTION()
+	void StartSprintInput(const struct FInputActionValue& value);
+	
+	UFUNCTION()
+	void StopSprintInput(const struct FInputActionValue& value);
+	
 public:
 	UFUNCTION()
 	void PlayerControlCalculate();
