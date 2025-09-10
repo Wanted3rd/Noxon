@@ -18,9 +18,9 @@ class IItemAction
 
 public:
 	UFUNCTION()
-	virtual void LeftAction();
+	virtual void LeftAction() = 0;
 	UFUNCTION()
-	virtual void RightAction();
+	virtual void RightAction() = 0;
 };
 
 
