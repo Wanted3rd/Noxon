@@ -125,6 +125,9 @@ public:
 	UFSMComponent();
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE EDefaultsStates GetCurrentState() const {return currentStates;}
 	
 	#pragma region Functors
 	virtual void RegisterStateFunction(const EFSMStatesMap& state, TFunction<void(float)> function);

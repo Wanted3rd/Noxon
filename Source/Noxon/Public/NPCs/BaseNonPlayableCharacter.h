@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "BaseNonPlayableCharacter.generated.h"
 
+class UFSMComponent;
+
 UENUM(BlueprintType, meta=(Bitmask))
 enum class ERelationship : uint8
 {
@@ -31,20 +33,27 @@ public:
 	FORCEINLINE AActor* GetTargetActor() {return targetActor;}
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE void SetTargetActor(AActor* inTarget) {targetActor = inTarget;}
-
 #pragma endregion Target
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE UFSMComponent* GetFSMComponent() {return fsmComponent;}
 	
 protected:
 	virtual void BeginPlay() override;
 
+	UFUNCTION()
+	virtual void RegisterFSMActions();
+
 public:
-	ERelationship relationship = ERelationship::Hostile;
+	ERelationship relationship = ERelationship::Default;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Anim", meta=(AllowPrivateAccess=true))
 	TSubclassOf<UAnimInstance> animFactory;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Components")
+	TObjectPtr<UFSMComponent> fsmComponent;
 	
-private:
 	UPROPERTY()
 	TObjectPtr<AActor> targetActor = nullptr;
 };

@@ -30,14 +30,11 @@ protected:
 
 	virtual void PostInitializeComponents() override;
 
+	virtual void RegisterFSMActions() override;
 private:
-	virtual void RegisterFSMFunctions();
 
 
 protected:
-	UPROPERTY(EditDefaultsOnly, Category = "Components")
-	TObjectPtr<UFSMComponent> fsmComponent;
-
 	// item
 	UPROPERTY(EditDefaultsOnly, Category = "Item")
 	TObjectPtr<AHandItem> handItem = nullptr;
