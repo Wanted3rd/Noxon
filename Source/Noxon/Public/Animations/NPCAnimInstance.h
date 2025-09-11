@@ -16,6 +16,7 @@ public:
 	virtual void NativeUpdateAnimation(float DeltaTime) override;
 protected:
 	virtual void NativeBeginPlay() override;
+	
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)

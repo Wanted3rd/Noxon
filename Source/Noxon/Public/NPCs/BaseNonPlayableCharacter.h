@@ -8,13 +8,13 @@
 
 class UFSMComponent;
 
-UENUM(BlueprintType, meta=(Bitmask))
+UENUM(BlueprintType)
 enum class ERelationship : uint8
 {
 	Default = 0 << 0 UMETA(Hidden),
-	Neutral = 1 << 0,
-	Hostile = 1 << 1,
-	Friendly = 1 << 2,
+	Neutral = 0,
+	Hostile = 1,
+	Friendly = 2,
 	End = 1 << 3 UMETA(Hidden)
 };
 
@@ -25,8 +25,6 @@ class NOXON_API ABaseNonPlayableCharacter : public ACharacter
 
 public:
 	ABaseNonPlayableCharacter();
-
-	virtual void Tick(float DeltaTime) override;
 
 #pragma region Target
 	UFUNCTION(BlueprintCallable)

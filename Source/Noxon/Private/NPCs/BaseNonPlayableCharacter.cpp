@@ -2,6 +2,7 @@
 
 #include <NPCs/Components/FSMComponent.h>
 
+#include "Animations/NPCAnimInstance.h"
 #include "Utility/DebugHelper.h"
 #include "Utility/FindHelper.h"
 
@@ -9,7 +10,7 @@
 ABaseNonPlayableCharacter::ABaseNonPlayableCharacter()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	animFactory = FinderHelper::GetClassFromConstructor<UAnimInstance>(TEXT("/Game/Assets/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed_C"));
+	animFactory = FinderHelper::GetClassFromConstructor<UNPCAnimInstance>(TEXT("/Game/NPCs/ABP_NPC_C"));
 	if (animFactory != nullptr)
 	{
 		GetMesh()->SetAnimInstanceClass(animFactory);
@@ -21,6 +22,7 @@ void ABaseNonPlayableCharacter::BeginPlay()
 	Super::BeginPlay();
 }
 
+/*
 void ABaseNonPlayableCharacter::RegisterFSMActions()
 {
 	fsmComponent->RegisterStateFunction(EFSMStatesMap::Idle, [&](float DeltaTime) -> void
@@ -108,11 +110,4 @@ void ABaseNonPlayableCharacter::RegisterFSMActions()
 		PRINT_TEXT(13, 2.f, TEXT("Exit Dead"));
 	});
 }
-
-
-// Called every frame
-void ABaseNonPlayableCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-}
-
+*/

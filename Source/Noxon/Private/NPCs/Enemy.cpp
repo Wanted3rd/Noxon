@@ -6,7 +6,6 @@
 #include "GameFlow/GameMode/IngameGameMode.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "NPCs/Components/FSMInterface.h"
 #include "NPCs/Components/FSMComponent.h"
 #include "NPCs/Manager/EnemyManager.h"
 #include "Utility/DebugHelper.h"
@@ -45,10 +44,6 @@ void AEnemy::BeginPlay()
 void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (count > EFSMStatesMap::End)
-	{
-		return;		
-	}
 	
 }
 
