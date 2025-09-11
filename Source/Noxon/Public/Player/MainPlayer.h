@@ -27,12 +27,28 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 public:
+	//캐릭터 컴포넌트 계층 구조
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<class USpringArmComponent> springArm;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<class USkeletalMeshComponent> armMesh;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<class UCameraComponent> camera;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<class USkeletalMeshComponent> handItemMesh;
+	
 	// 이동 관련@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	float speed;
 	FVector direction;
 	float rot_yaw;
 	float rot_pitch;
 	bool bIsSprinting = false;
+
+	//크로스헤어 컴포넌트
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	// TSubclassOf<class UHudComponent> hudComp; 
+	class UHudComponent* hudComp; 
+
 	
 
 	

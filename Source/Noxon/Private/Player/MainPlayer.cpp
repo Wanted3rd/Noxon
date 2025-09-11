@@ -5,7 +5,10 @@
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "InputMappingContext.h"
+#include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "Player/Components/Hud/HudComponent.h"
 #include "Utility/FindHelper.h"
 
 
@@ -15,6 +18,9 @@ AMainPlayer::AMainPlayer()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	hudComp = CreateDefaultSubobject<UHudComponent>(TEXT("HUDComponent"));
+
+	
 	USkeletalMesh* skm = BASE_SKM;
 	if (IsValid(skm))
 	{
@@ -22,6 +28,41 @@ AMainPlayer::AMainPlayer()
 		GetMesh()->SetRelativeLocation(FVector(0,0, -87));
 		GetMesh()->SetRelativeRotation(FRotator(0,-90,0));
 	}
+
+	GetMesh()->SetOwnerNoSee(true);
+
+
+	springArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring Arm"));
+	springArm->TargetArmLength = 0.f;
+	springArm->bUsePawnControlRotation = true;
+	springArm->bInheritPitch = true;
+	springArm->bInheritYaw = true;
+	springArm->bInheritRoll = false;
+	springArm->bDoCollisionTest = false;
+	springArm->SocketOffset = FVector(0.0,0.0,20.f);
+	springArm->TargetOffset = FVector(0.0,0.0,40.f);
+	springArm->SetupAttachment(RootComponent);
+
+	armMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ArmMesh"));
+	armMesh->bOnlyOwnerSee = true;
+	armMesh->CastShadow = false;
+	armMesh->SetupAttachment(springArm);
+
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> tempArm(TEXT("/Game/Assets/Characters/FirstPersonArms/Character/Mesh/SK_Mannequin_Arms.SK_Mannequin_Arms"));
+	if (tempArm.Succeeded())
+	{
+		armMesh->SetSkeletalMesh(tempArm.Object);
+	}
+	
+	camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	camera->SetupAttachment(armMesh, TEXT("headCameraSocket"));
+	camera->FieldOfView = 110.f;
+	
+	handItemMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ViewHandItemMesh"));
+	handItemMesh->bOnlyOwnerSee = true;
+	handItemMesh->CastShadow = false;
+	handItemMesh->SetupAttachment(armMesh, TEXT("hand_rWeaponSocket"));
+	
 	
 	imc_mainplayer = LoadObject<UInputMappingContext>(nullptr, TEXT("/Game/Player/Input/IMC_MainPlayer.IMC_MainPlayer.IMC_MainPlayer"));
 	
@@ -176,5 +217,7 @@ void AMainPlayer::PlayerControlCalculate()
 	rot_pitch = 0.0f;
 	direction = FVector::ZeroVector;
 }
+
+
 
 
