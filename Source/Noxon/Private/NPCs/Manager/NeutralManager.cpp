@@ -2,3 +2,12 @@
 
 
 #include "NPCs/Manager/NeutralManager.h"
+
+void UNeutralManager::PullNPCsTransformsFromWorld()
+{
+}
+
+void UNeutralManager::SaveNPCToArr(ACharacter* npc)
+{
+	npcArr.AddUnique(npc);
+}

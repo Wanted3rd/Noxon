@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
 #include "BaseNPCManager.generated.h"
+class ACharacter;
+
 
 /**
  * 
@@ -14,11 +16,10 @@ class NOXON_API UBaseNPCManager : public UObject
 {
 	GENERATED_BODY()
 	
-protected:
-	UFUNCTION()
-	virtual void PullPositionsFromWorld() PURE_VIRTUAL(UBaseNPCManager::PullPositionsFromWorld(), );
-	UFUNCTION()
-	virtual void SaveToDataTable() PURE_VIRTUAL(UBaseNPCManager::PullPositionsFromWorld(), );
+public:
+	virtual void PullNPCsTransformsFromWorld() PURE_VIRTUAL(UBaseNPCManager::PullPositionsFromWorld, );
+	virtual void PushNPCsTransformsForWorld() PURE_VIRTUAL(UBaseNPCManager::PushPositionsForWorld, );
+	virtual void SaveNPCToArr(ACharacter* npc) PURE_VIRTUAL(UBaseNPCManager::PullPositionsFromWorld, );
 
 protected:
 	UPROPERTY(EditAnywhere)

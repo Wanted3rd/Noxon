@@ -6,13 +6,15 @@
 #include "GameFramework/Character.h"
 #include "BaseNonPlayableCharacter.generated.h"
 
-UENUM(BlueprintType, meta=(Bitmask))
+class UFSMComponent;
+
+UENUM(BlueprintType)
 enum class ERelationship : uint8
 {
 	Default = 0 << 0 UMETA(Hidden),
-	Neutral = 1 << 0,
-	Hostile = 1 << 1,
-	Friendly = 1 << 2,
+	Neutral = 0,
+	Hostile = 1,
+	Friendly = 2,
 	End = 1 << 3 UMETA(Hidden)
 };
 
@@ -24,27 +26,32 @@ class NOXON_API ABaseNonPlayableCharacter : public ACharacter
 public:
 	ABaseNonPlayableCharacter();
 
-	virtual void Tick(float DeltaTime) override;
-
 #pragma region Target
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE AActor* GetTargetActor() {return targetActor;}
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE void SetTargetActor(AActor* inTarget) {targetActor = inTarget;}
-
 #pragma endregion Target
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE UFSMComponent* GetFSMComponent() {return fsmComponent;}
 	
 protected:
 	virtual void BeginPlay() override;
 
+	UFUNCTION()
+	virtual void RegisterFSMActions();
+
 public:
-	ERelationship relationship = ERelationship::Hostile;
+	ERelationship relationship = ERelationship::Default;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Anim", meta=(AllowPrivateAccess=true))
 	TSubclassOf<UAnimInstance> animFactory;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Components")
+	TObjectPtr<UFSMComponent> fsmComponent;
 	
-private:
 	UPROPERTY()
 	TObjectPtr<AActor> targetActor = nullptr;
 };

@@ -3,6 +3,7 @@
 
 #include "Animations/NPCAnimInstance.h"
 #include "NPCs/BaseNonPlayableCharacter.h"
+#include "NPCs/Components/FSMComponent.h"
 
 void UNPCAnimInstance::NativeBeginPlay()
 {
@@ -13,5 +14,9 @@ void UNPCAnimInstance::NativeBeginPlay()
 void UNPCAnimInstance::NativeUpdateAnimation(float DeltaTime)
 {
 	Super::NativeUpdateAnimation(DeltaTime);
-	
+	if (LIKELY(IsValid(ownerNPC)))
+	{
+		state = ownerNPC->GetFSMComponent()->GetCurrentState();
+		velocity = ownerNPC->GetTransform().InverseTransformVector(ownerNPC->GetVelocity());
+	}
 }

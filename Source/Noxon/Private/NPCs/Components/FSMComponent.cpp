@@ -6,7 +6,6 @@
 #include "Engine/PlatformInterfaceBase.h"
 #include "GameFramework/Character.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "NPCs/Components/FSMInterface.h"
 
 
 UFSMComponent::UFSMComponent()

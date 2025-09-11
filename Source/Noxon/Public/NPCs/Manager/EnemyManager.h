@@ -13,4 +13,8 @@ UCLASS()
 class NOXON_API UEnemyManager : public UBaseNPCManager
 {
 	GENERATED_BODY()
+
+public:
+	virtual void PullNPCsTransformsFromWorld() override;
+	virtual void SaveNPCToArr(ACharacter* npc) override;
 };
