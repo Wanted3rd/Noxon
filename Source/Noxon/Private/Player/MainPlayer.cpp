@@ -29,7 +29,7 @@ AMainPlayer::AMainPlayer()
 		GetMesh()->SetRelativeRotation(FRotator(0,-90,0));
 	}
 
-	GetMesh()->SetOwnerNoSee(true);
+	// GetMesh()->SetOwnerNoSee(true);
 
 
 	springArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring Arm"));
@@ -46,8 +46,11 @@ AMainPlayer::AMainPlayer()
 	armMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ArmMesh"));
 	armMesh->bOnlyOwnerSee = true;
 	armMesh->CastShadow = false;
+	armMesh->SetRelativeLocation(FVector(0, 0, -133.f));
+	armMesh->SetRelativeRotation(FRotator(0, -90.f, 0));
 	armMesh->SetupAttachment(springArm);
-
+	
+	
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> tempArm(TEXT("/Game/Assets/Characters/FirstPersonArms/Character/Mesh/SK_Mannequin_Arms.SK_Mannequin_Arms"));
 	if (tempArm.Succeeded())
 	{
@@ -56,12 +59,21 @@ AMainPlayer::AMainPlayer()
 	
 	camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	camera->SetupAttachment(armMesh, TEXT("headCameraSocket"));
+	camera->SetRelativeLocation(FVector(0, 0, 0));
+	camera->SetRelativeRotation(FRotator(0, 0, 0));
 	camera->FieldOfView = 110.f;
 	
 	handItemMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ViewHandItemMesh"));
 	handItemMesh->bOnlyOwnerSee = true;
 	handItemMesh->CastShadow = false;
-	handItemMesh->SetupAttachment(armMesh, TEXT("hand_rWeaponSocket"));
+	handItemMesh->SetupAttachment(armMesh, TEXT("hand_rSocket"));
+
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> tempAK(TEXT("/Script/Engine.SkeletalMesh'/Game/Assets/Gun/Ak47/SKM_AK_LP_correct.SKM_AK_LP_correct'"));
+	if (tempAK.Succeeded())
+	{
+		handItemMesh->SetSkeletalMesh(tempAK.Object);
+	}
+	
 	
 	
 	imc_mainplayer = LoadObject<UInputMappingContext>(nullptr, TEXT("/Game/Player/Input/IMC_MainPlayer.IMC_MainPlayer.IMC_MainPlayer"));
