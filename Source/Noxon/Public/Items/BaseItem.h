@@ -4,10 +4,11 @@
 #include "GameFramework/Actor.h"
 #include "BaseItem.generated.h"
 
+
 USTRUCT(BlueprintType)
 struct FItemProperty
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UTexture2D> icon = nullptr;
