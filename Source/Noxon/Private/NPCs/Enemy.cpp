@@ -3,11 +3,8 @@
 
 #include "NPCs/Enemy.h"
 
-#include "GameFlow/GameMode/IngameGameMode.h"
-#include "GameFramework/CharacterMovementComponent.h"
-#include "Kismet/GameplayStatics.h"
 #include "NPCs/Components/FSMComponent.h"
-#include "NPCs/Manager/EnemyManager.h"
+#include "NPCs/Manager/NPCManager.h"
 #include "Utility/DebugHelper.h"
 #include "Utility/FindHelper.h"
 
@@ -38,13 +35,12 @@ void AEnemy::PostInitializeComponents()
 void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
-	GM_INGAME->GetEnemyManager()->SaveNPCToArr(this);
+	GetWorld()->GetSubsystem<UNPCManager>()->RegisterNPC(this);
 }
 
 void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
 }
 
 void AEnemy::RegisterFSMActions()

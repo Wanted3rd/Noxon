@@ -4,8 +4,11 @@
 #include "Animation/AnimInstance.h"
 #include "NPCAnimInstance.generated.h"
 
-enum class EDefaultsStates : uint8;
 class ABaseNonPlayableCharacter;
+
+enum class EPhase : uint8;
+enum class EDamageState : uint8;
+enum class EMoveState : uint8;
 
 UCLASS()
 class NOXON_API UNPCAnimInstance : public UAnimInstance
@@ -21,8 +24,12 @@ protected:
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	ABaseNonPlayableCharacter* ownerNPC = nullptr;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	EDefaultsStates state;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FVector velocity;
+
+	EPhase phase;
+	EDamageState damageState;
+	EMoveState moveState;
+	
 };

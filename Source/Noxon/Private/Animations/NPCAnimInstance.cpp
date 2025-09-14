@@ -16,7 +16,7 @@ void UNPCAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	Super::NativeUpdateAnimation(DeltaTime);
 	if (LIKELY(IsValid(ownerNPC)))
 	{
-		state = ownerNPC->GetFSMComponent()->GetCurrentState();
+		phase = ownerNPC->GetFSMComponent()->GetCurrentPhase();
 		velocity = ownerNPC->GetTransform().InverseTransformVector(ownerNPC->GetVelocity());
 	}
 }

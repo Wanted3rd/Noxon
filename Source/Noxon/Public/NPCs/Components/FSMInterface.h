@@ -88,5 +88,34 @@ public:
 	
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Actions for State Machine")
 	void OnExit();
+/*#pragma region Functors
+	typedef TFunction<void(float)> StateFunctor;
+	//https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Runtime/uLangCore/uLang/Common/Containers/TFunction?application_version=5.6
+	TMap<EPhase, TArray<StateFunctor>> stateFunctors;
+	
+#pragma endregion Functors
 
+#pragma region Register Phase
+	void RegisterStateFunction(const EPhase& phase, const uint8& state, const StateFunctor& function) { stateFunctors[phase][state] = function; }
+	void BeginPlay()
+	{
+	
+	//stateFunctors.Init(nullptr, EFSMStatesMap::End + 1);
+		//stateStarts.AddZeroed(EFSMStatesMap::End + 1);
+		//for (int i = 0; i < EFSMStatesMap::End + 1; ++i)
+		//{
+		//	stateStarts[i] = MakeShared<FOnStateStart>();
+		//}
+		//stateExits.AddZeroed(EFSMStatesMap::End + 1);
+		//for (int i = 0; i < EFSMStatesMap::End + 1; ++i)
+		//{
+		//	stateExits[i] = MakeShared<FOnStateExit>();
+		//}
+		
+		//stateStarts.Init(FOnStateStart(), EFSMStatesMap::End + 1);
+		//stateExits.Init(FOnStateExit(), EFSMStatesMap::End + 1);
+	}
+
+#pragma endregion Register Phase
+*/
 };

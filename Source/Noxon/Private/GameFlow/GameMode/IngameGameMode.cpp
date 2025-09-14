@@ -5,8 +5,6 @@
 
 #include "Player/MainPlayer.h"
 
-#include "NPCs/Manager/EnemyManager.h"
-#include "NPCs/Manager/NeutralManager.h"
 
 AIngameGameMode::AIngameGameMode()
 {
@@ -15,9 +13,6 @@ AIngameGameMode::AIngameGameMode()
 	{
 		DefaultPawnClass = tempPlayer.Class;
 	}
-	
-	EnemyManager = CreateDefaultSubobject<UEnemyManager>("EnemyManager");
-	NeutralManager = CreateDefaultSubobject<UNeutralManager>("NeutralManager");
 	
 }
 

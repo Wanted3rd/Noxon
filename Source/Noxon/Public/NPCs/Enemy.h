@@ -10,6 +10,7 @@
 
 class UFSMComponent;
 class AHandItem;
+class UStateAction;
 
 #pragma endregion Forward Declarations
 
@@ -31,17 +32,14 @@ protected:
 	virtual void PostInitializeComponents() override;
 
 	virtual void RegisterFSMActions() override;
-private:
+
+public:
+	TWeakPtr<UStateAction> CurrentAction;
 
 
 protected:
 	// item
-	UPROPERTY(EditDefaultsOnly, Category = "Item")
-	TObjectPtr<AHandItem> handItem = nullptr;
+
 
 	// coord in worldMap (table, rand(0~row end) )
-
-private:
-	float time = 0.f;
-	uint8 count = 0;
 };
