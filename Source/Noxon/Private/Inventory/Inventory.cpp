@@ -88,7 +88,8 @@ int32 UInventory::FindFirstEmptySlot() const
 {
 	for (const FInventorySlot& S : Slots)
 	{
-		if (S.IsEmpty()) return S.SlotIndex;
+		if (S.IsEmpty())
+			return S.SlotIndex;
 	}
 	return INDEX_NONE;
 }
