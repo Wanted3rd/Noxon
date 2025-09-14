@@ -21,6 +21,8 @@ public:
 	virtual void LeftAction() = 0;
 	UFUNCTION()
 	virtual void RightAction() = 0;
+	UFUNCTION()
+	virtual void RKeyAction() = 0;
 };
 
 
@@ -34,6 +36,7 @@ public:
 
 	virtual void LeftAction() override {}
 	virtual void RightAction() override {}
+	virtual void RKeyAction() override {}
 
 protected:
 	virtual void BeginPlay() override;
