@@ -10,6 +10,7 @@
 
 // 전방 선언: 헤더 경량화 및 컴파일 안정성
 class UTexture2D;
+class AHandItem;
 
 UENUM(BlueprintType)
 enum class EInventoryOpError : uint8
@@ -57,6 +58,14 @@ struct FItemStaticData : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FText DisplayName;
+
+	// 핸드 장비 여부 (DT 컬럼: isHandable 권장)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsHandable = false;
+
+	// 풀 생성용 핸드 아이템 클래스 (BP/C++ 서브클래스 경로)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSoftClassPtr<AHandItem> HandItemClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FGameplayTagContainer Tags; // 카테고리/필터(예: Item.Consumable, Item.Weapon 등)
