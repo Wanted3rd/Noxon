@@ -26,6 +26,12 @@ public:
 	bool isInAir = false;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=PlayerAnim)
 	bool isMoving = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=PlayerAnim)
+	bool isAiming = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=PlayerAnim)
+	bool isSprinting = false;
 	
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 

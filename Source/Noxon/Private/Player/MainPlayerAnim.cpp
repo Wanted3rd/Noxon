@@ -43,6 +43,9 @@ void UMainPlayerAnim::NativeUpdateAnimation(float DeltaSeconds)
 		auto cmp = player->GetCharacterMovement();
 		isInAir = cmp->IsFalling();
 		isMoving = velocity.Size() > 0.f;
+
+		isAiming = player->bIsRigthClicking;
+		isSprinting = player->bIsSprinting;
 	}
 }
 

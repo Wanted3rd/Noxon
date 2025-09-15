@@ -44,6 +44,20 @@ public:
 	float rot_pitch;
 	bool bIsSprinting = false;
 
+	
+
+	// 마우스 관련
+	bool bIsRigthClicking = false;
+	bool bHoldingLeftClick = false;  // 마우스 좌클릭 여부
+	bool bIsShooting = false;        // 현재 발사 중인지
+	FTimerHandle FireRateHandle;     // 발사 딜레이용 타이머
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Animation")
+	class UAnimMontage* fireMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Animation")
+	class UAnimMontage* fireAimMontage;
+	
 	//크로스헤어 컴포넌트
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	// TSubclassOf<class UHudComponent> hudComp; 
@@ -51,6 +65,11 @@ public:
 
 	
 
+	//HandItem
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TSubclassOf<class AHandItem> handItemClass;
+
+	
 	
 	//Input Action - IA
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
@@ -70,6 +89,13 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	class UInputAction* ia_sprint;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	class UInputAction* ia_leftAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	class UInputAction* ia_rightAction;
+
 	
 public:
 	//bindingFunction
@@ -90,9 +116,49 @@ public:
 	
 	UFUNCTION()
 	void StopSprintInput(const struct FInputActionValue& value);
+
+	UFUNCTION()
+	void StartRightActionInput(const struct FInputActionValue& value);
+
+	UFUNCTION()
+	void StopRightActionInput(const struct FInputActionValue& value);
+
+	UFUNCTION()
+	void TriggerLeftActionInput(const struct FInputActionValue& value);
+
+	UFUNCTION()
+	void CompleteLeftActionInput(const struct FInputActionValue& value);
 	
+	// UFUNCTION()
+	// void StartLeftActionInput(const struct FInputActionValue& value);
+
+	// UFUNCTION()
+	// void StopLeftActionI
 public:
 	UFUNCTION()
 	void PlayerControlCalculate();
+
+	UFUNCTION()
+	void FireWeapon();
+
+	// UFUNCTION()
+	// void ResetFire();
+
+public:
+	//temp
+
+	// 총알공장
+	UPROPERTY(EditDefaultsOnly, Category=Bullet)
+	TSubclassOf<class ARifleDefaultAmmo> bulletFactory;
 	
+	
+	
+	// Object Pool
+	// 몇발
+	UPROPERTY(EditAnywhere, Category=Bullet)
+	int32 bulletPoolSize = 30;
+
+	// 탄창
+	UPROPERTY()
+	TArray<class ARifleDefaultAmmo*> bulletPool;
 };
