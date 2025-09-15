@@ -125,6 +125,8 @@ void UNPCManager::ProcessNPCsBatch()
 	    },
 		[visibleDistSquared, tickableDistSquared, npcPos, playerPos](FProximityCheckContext& Context, int32 NPCIndex)
 		{
+			if (!npcPos.IsValidIndex(Context.index))
+				return;
 			const FVector npcLocation = npcPos[Context.index];
 			ENpcActivateType activeType = ENpcActivateType::Default;
 			for (const FVector& PlayerLocation : playerPos)
