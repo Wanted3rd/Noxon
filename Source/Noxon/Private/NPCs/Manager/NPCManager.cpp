@@ -156,12 +156,16 @@ void UNPCManager::ProcessNPCsBatch()
 	ownerWorld->GetTimerManager().SetTimerForNextTick(
 		[&, TaskContexts, npcPos]() -> void
 		{
-			if (npcContainer.Num() != npcPos.Num())
+			if (npcContainer.Num() != TaskContexts.Num())
 			{
 				return;
 			}
 			for (int32 i = 0; i < TaskContexts.Num(); ++i)
 			{
+				if (!npcContainer.IsValidIndex(i))
+				{
+					return;
+				}
 				ABaseNonPlayableCharacter* npc = npcContainer[i];
 				switch (TaskContexts[i].activeType)
 				{
