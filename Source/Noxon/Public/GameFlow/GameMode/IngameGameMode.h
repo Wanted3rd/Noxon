@@ -26,19 +26,8 @@ class NOXON_API AIngameGameMode : public AGameModeBase
 public:
 	AIngameGameMode();
 
-
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE UEnemyManager* GetEnemyManager() const {return EnemyManager;}
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE UNeutralManager* GetNeutralManager() const {return NeutralManager;}
-
 protected:
 	virtual void BeginPlay() override;
 
-protected:
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UEnemyManager> EnemyManager;
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UNeutralManager> NeutralManager;
 	
 };

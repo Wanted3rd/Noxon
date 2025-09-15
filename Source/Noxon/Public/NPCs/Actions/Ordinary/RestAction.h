@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BaseNPCManager.h"
-#include "EnemyManager.generated.h"
+#include "NPCs/Actions/StateAction.h"
+#include "RestAction.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class NOXON_API UEnemyManager : public UBaseNPCManager
+class NOXON_API URestAction : public UStateAction
 {
 	GENERATED_BODY()
 };
