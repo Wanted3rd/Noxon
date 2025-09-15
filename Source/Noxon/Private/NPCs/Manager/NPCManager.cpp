@@ -10,23 +10,33 @@
 
 #include "NPCs/Enemy.h"
 #include "NPCs/NeutralNPC.h"
+#include "NPCs/Actions/ActionsPaths.h"
+#include "NPCs/Components/FSMComponent.h"
 
+
+TStatId UNPCManager::GetStatId() const
+{
+	return TStatId();
+}
 
 bool UNPCManager::ShouldCreateSubsystem(UObject* Outer) const
 {
 	UWorld* world = Cast<UWorld>(Outer);
-	AIngameGameMode* ingameGM = Cast<AIngameGameMode>(UGameplayStatics::GetGameMode(world));
-	if (!IsValid(world) || !IsValid(ingameGM))
-	{
-		return false;
-	}
+	//AIngameGameMode* ingameGM = Cast<AIngameGameMode>(UGameplayStatics::GetGameMode(world));
+	//if (!IsValid(world) || !IsValid(ingameGM))
+	//{
+	//	return false;
+	//}
 	
 	return Super::ShouldCreateSubsystem(Outer);
 }
 
 void UNPCManager::OnWorldBeginPlay(UWorld& InWorld)
 {
+	CreateActions();
 	ownerWorld = InWorld.GetWorld();
+	lodProperties.tickableDist *= lodProperties.tickableDist;
+	lodProperties.visibleDist *= lodProperties.visibleDist;
 	Super::OnWorldBeginPlay(InWorld);
 	PushNPCsTransformsForWorld();
 	
@@ -40,6 +50,17 @@ void UNPCManager::OnWorldBeginPlay(UWorld& InWorld)
 void UNPCManager::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	APawn* tempPlayer = playerContainer[0]->GetPawn();
+	for (ABaseNonPlayableCharacter* npc : activatedNpcContainer)
+	{
+		npc->SetPhaseAction(phaseActions[npc->GetFSMComponent()->GetCurrentPhase()]);
+		if (FVector::Dist(npc->GetActorLocation(), tempPlayer->GetActorLocation()) < 500.f)
+		{
+			if (npc->GetActorForwardVector().Dot((
+				tempPlayer->GetActorLocation() - npc->GetActorLocation()).GetSafeNormal()) < 0.3f)
+				npc->GetFSMComponent()->ActivateMoveState(EMoveState::Chase);
+		}
+	}
 	if (batchDeltaTime > lodProperties.updateTime)
 	{
 		ProcessNPCsBatch();
@@ -89,81 +110,87 @@ void UNPCManager::ProcessNPCsBatch()
 		}
 		return;
 	}
-	
+
+	float visibleDistSquared = lodProperties.visibleDist;
+	float tickableDistSquared = lodProperties.tickableDist;
 	TArray<FProximityCheckContext> TaskContexts;
 	ParallelForWithTaskContext(
-		/*"NPCsDistToPlayer",*/
 		TaskContexts,
 		npcPos.Num(),
-	    FProximityCheckContext(),
-		[&](FProximityCheckContext& Context, int32 NPCIndex)
+	    [](int32 contextIndex, int32 NumContexts)
+	    {
+	    	FProximityCheckContext context = FProximityCheckContext();
+	    	context.index = contextIndex;
+		    return context;
+	    },
+		[visibleDistSquared, tickableDistSquared, npcPos, playerPos](FProximityCheckContext& Context, int32 NPCIndex)
 		{
-			const FVector NPCLocation = npcPos[NPCIndex];
-
+			const FVector npcLocation = npcPos[Context.index];
 			ENpcActivateType activeType = ENpcActivateType::Default;
 			for (const FVector& PlayerLocation : playerPos)
 			{
-				const float DistanceSquared = FVector::DistSquared(NPCLocation, PlayerLocation);
-				if (DistanceSquared < lodProperties.visibleDist)
+				const float DistanceSquared = FVector::DistSquared(npcLocation, PlayerLocation);
+				if (DistanceSquared < visibleDistSquared)
 				{
 					activeType = ENpcActivateType::Visible;
 					break;
 				}
-				if (DistanceSquared < lodProperties.tickableDist)
+				if (DistanceSquared < tickableDistSquared)
 				{
 					activeType = ENpcActivateType::Tickable;
 					break;
 				}
 			}
 
-			if (activeType > ENpcActivateType::Default)
+			if (activeType > ENpcActivateType::Deactivated)
 			{
-				Context.NPCs.Add(NPCIndex, activeType);
+				Context.activeType = activeType;
 			}
 			else
 			{
-				Context.NPCs.Add(NPCIndex, ENpcActivateType::Default);
+				Context.activeType = ENpcActivateType::Deactivated;
 			}
-		}
+		}		
 	);
-
-	if (npcContainer.Num() != npcPos.Num())
-	{
-		return;
-	}
 	
 	ownerWorld->GetTimerManager().SetTimerForNextTick(
-		[&]() -> void
+		[&, TaskContexts, npcPos]() -> void
 		{
-			for (const auto& Context : TaskContexts)
+			if (npcContainer.Num() != npcPos.Num())
 			{
-				for (auto pair: Context.NPCs)
+				return;
+			}
+			for (int32 i = 0; i < TaskContexts.Num(); ++i)
+			{
+				ABaseNonPlayableCharacter* npc = npcContainer[i];
+				switch (TaskContexts[i].activeType)
 				{
-					if (npcContainer.IsValidIndex(pair.Key))
+				case ENpcActivateType::Deactivated:
 					{
-						ABaseNonPlayableCharacter* npc = npcContainer[pair.Key];
-						switch (pair.Value)
+						npc->SetActorTickEnabled(false);
+						npc->SetActorHiddenInGame(true);
+						if (activatedNpcContainer.Contains(npc))
 						{
-						case ENpcActivateType::Default:
-							{
-								npc->SetActorTickEnabled(false);
-								npc->SetActorHiddenInGame(true);
-							}
-							break;
-						case ENpcActivateType::Tickable:
-							{
-								npc->SetActorTickEnabled(true);
-								npc->SetActorHiddenInGame(true);
-							}
-							break;
-						case ENpcActivateType::Visible:
-							{
-								npc->SetActorTickEnabled(true);
-								npc->SetActorHiddenInGame(false);
-							}
-							break;
+							npc->SetTargetPawn(nullptr);
+							activatedNpcContainer.Remove(npc);
 						}
 					}
+					break;
+				case ENpcActivateType::Tickable:
+					{
+						npc->SetActorTickEnabled(true);
+						npc->SetActorHiddenInGame(true);
+					}
+					break;
+				case ENpcActivateType::Visible:
+					{
+						npc->SetActorTickEnabled(true);
+						npc->SetActorHiddenInGame(false);
+						// have to Modify. Hard Coding. What Keyword to find this line.
+						npc->SetTargetPawn(playerContainer[0]->GetPawn());
+						activatedNpcContainer.Add(npc);
+					}
+					break;
 				}
 			}
 		}
@@ -202,10 +229,11 @@ void UNPCManager::PushNPCsTransformsForWorld()
 
 void UNPCManager::DestroyNPC(ABaseNonPlayableCharacter* npc)
 {
-	if (activatedNpcContainer.RemoveSingleSwap(npc, EAllowShrinking::Yes) == 0)
+	if (activatedNpcContainer.Contains(npc))
 	{
-		npcContainer.RemoveSingleSwap(npc, EAllowShrinking::Yes);
+		activatedNpcContainer.Remove(npc);
 	}
+	npcContainer.RemoveSingleSwap(npc, EAllowShrinking::Yes);
 	npc->Destroy();
 }
 
@@ -409,6 +437,13 @@ bool UNPCManager::LoadNPCsTransformFromJson(FNPCsTransform& output)
 
 void UNPCManager::CreateActions()
 {
+	phaseActions.Add(EPhase::Idle, NewObject<UIdleAction>());
+	phaseActions.Add(EPhase::HipFire, NewObject<UHipFireAction>());
+	damagedActions.Add(EDamageState::SmallDamaged, NewObject<USmallDamaged>());
+	damagedActions.Add(EDamageState::Death, NewObject<UDeadlyDamaged>());
+	moveActions.Add(EMoveState::Stop, NewObject<UStopMove>());
+	moveActions.Add(EMoveState::Patrol, NewObject<UPatrolMove>());
+	moveActions.Add(EMoveState::Chase, NewObject<UChaseMove>());
 	
 }
 

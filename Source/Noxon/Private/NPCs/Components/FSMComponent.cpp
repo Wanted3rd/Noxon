@@ -16,7 +16,7 @@ UFSMComponent::UFSMComponent()
 void UFSMComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	ActivatePhase(EPhase::Idle);
 }
 
 void UFSMComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -29,11 +29,24 @@ void UFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorCo
 {	
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	if (currentDamageState == EDamageState::Death)
+	{
+		return;
+	}
+
+	if (currentPhase == EPhase::Default)
+	{
+		ActivatePhase(EPhase::Idle);
+	}
 }
 
-void UFSMComponent::ActivatePhase(const EPhase& phase)
+void UFSMComponent::ActivatePhase(const EPhase& inPhase)
 {
-	if (phase == EPhase::End || phase == EPhase::Default)
+	if (inPhase == EPhase::Default)
+	{
+		return;
+	}
+	if (currentDamageState == EDamageState::Death)
 	{
 		return;
 	}
@@ -44,7 +57,6 @@ void UFSMComponent::ActivatePhase(const EPhase& phase)
 		{
 			return;
 		}
-		currentPhase = EPhase::InteractPhase;
 	}
 	else if (currentPhase > EPhase::BattlePhase)
 	{
@@ -52,7 +64,6 @@ void UFSMComponent::ActivatePhase(const EPhase& phase)
 		{
 			return;
 		}
-		currentPhase = EPhase::BattlePhase;
 	}
 	else if (currentPhase > EPhase::OrdinaryPhase)
 	{
@@ -60,33 +71,67 @@ void UFSMComponent::ActivatePhase(const EPhase& phase)
 		{
 			return;
 		}
-		currentPhase = EPhase::OrdinaryPhase;
 	}
 	
-	currentPhase |= phase;
+	currentPhase |= inPhase;
 }
 
-void UFSMComponent::DeactivatePhase(const EPhase& phase, const float& cooldownTime)
+void UFSMComponent::DeactivatePhase(const EPhase& inPhase, const float& cooldownTime)
 {
 	if (cooldownTime > 0.f)
 	{
-		lockedPhase |= phase;
-		GetWorld()->GetTimerManager().SetTimer(lockTimer, [&, phase]()
+		lockedPhase |= inPhase;
+		GetWorld()->GetTimerManager().SetTimer(lockTimer, [&, inPhase]()
 		{
-			lockedPhase &= ~phase;
+			lockedPhase &= ~inPhase;
 		}, cooldownTime, false);
 	}
-	currentPhase &= ~phase;
+	currentPhase &= ~inPhase;
 }
 
-void UFSMComponent::ActivateMoveState(const EMoveState& moveState)
+void UFSMComponent::ActivateMoveState(const EMoveState& inMoveState)
 {
-	//if (currentPhase & EPhase)
+	if (currentDamageState == EDamageState::Death || inMoveState == EMoveState::End)
+	{
+		return;
+	}
+	uint8 stateValue = static_cast<uint8>(inMoveState);
+	if (EnumHasAnyFlags(currentPhase, EPhase::BattlePhase))
+	{
+		if (stateValue > static_cast<uint8>(EMoveState::BattlePhase))
+		{
+			currentMoveState = inMoveState;
+		}
+		return;
+	}
+	if (EnumHasAnyFlags(currentPhase, EPhase::OrdinaryPhase))
+	{
+		if (stateValue > static_cast<uint8>(EMoveState::OrdinaryPhase))
+		{
+			currentMoveState = inMoveState;
+		}
+		return;
+	}
+	if (EnumHasAnyFlags(currentPhase, EPhase::InteractPhase))
+	{
+		currentMoveState = EMoveState::Stop;
+	}
+}
+
+void UFSMComponent::ActivateDamagedState(const EDamageState& inDamageState)
+{
+	if (currentDamageState == EDamageState::Death)
+	{
+		return;
+	}
+	currentDamageState = inDamageState;
 }
 
 
 void UFSMComponent::ResetStates()
 {
+	GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 	currentPhase = EPhase::Default;
+	lockedPhase = EPhase::Default;
 }
 

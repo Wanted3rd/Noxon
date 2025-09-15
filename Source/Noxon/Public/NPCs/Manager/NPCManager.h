@@ -7,6 +7,10 @@
 #include "NPCManager.generated.h"
 
 
+enum class EDamageState : uint8;
+enum class EMoveState : uint8;
+class UStateAction;
+enum class EPhase : uint8;
 class AMainPlayer;
 class ABaseNonPlayableCharacter;
 
@@ -48,9 +52,10 @@ public:
 };
 
 UENUM()
-enum class ENpcActivateType
+enum class ENpcActivateType : uint8
 {
 	Default = 0 UMETA(Hidden),
+	Deactivated,
 	Tickable,
 	Visible,
 	End UMETA(Hidden)
@@ -66,10 +71,12 @@ class NOXON_API UNPCManager : public UTickableWorldSubsystem
 
 	struct FProximityCheckContext
 	{
-		TMap<int32, ENpcActivateType> NPCs;
+		int32 index = -1;
+		ENpcActivateType activeType;
 	};
 	
 public:
+	virtual TStatId GetStatId() const override;
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
 	virtual void Tick(float DeltaTime) override;
@@ -84,7 +91,7 @@ public:
 
 	UFUNCTION()
 	void RegisterNPC(ABaseNonPlayableCharacter* npc)
-	{npcContainer.AddUnique(npc);}
+	{npcContainer.Add(npc);}
 	UFUNCTION()
 	void DestroyNPC(ABaseNonPlayableCharacter* npc);
 	
@@ -97,8 +104,6 @@ protected:
 	
 	UFUNCTION()
 	void ProcessNPCsBatch();
-	UFUNCTION()
-	void CollectNPCsResult();
 
 private:
 	void SaveNPCsTransformToJson(const FNPCsTransform& NPCData);
@@ -114,7 +119,7 @@ protected:
 	TArray<ABaseNonPlayableCharacter*> npcContainer;
 
 	UPROPERTY()
-	TArray<ABaseNonPlayableCharacter*> activatedNpcContainer;
+	TSet<ABaseNonPlayableCharacter*> activatedNpcContainer;
 
 	UPROPERTY()
 	FLODPropertiesForActivateNPC lodProperties = FLODPropertiesForActivateNPC();
@@ -124,6 +129,12 @@ protected:
 private:
 	UPROPERTY()
 	TObjectPtr<UWorld> ownerWorld = nullptr;
+	UPROPERTY()
+	TMap<EPhase, TObjectPtr<UStateAction>> phaseActions;
+	UPROPERTY()
+	TMap<EMoveState, TObjectPtr<UStateAction>> moveActions;
+	UPROPERTY()
+	TMap<EDamageState, TObjectPtr<UStateAction>> damagedActions;
 
 	const FString npcsTransformsFilePath = FPaths::ProjectDir() + "Data/NPCsTransforms.json";
 };

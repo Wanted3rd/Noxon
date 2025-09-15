@@ -23,19 +23,10 @@ class NOXON_API AEnemy : public ABaseNonPlayableCharacter
 public:
 	// Sets default values for this character's properties
 	AEnemy();
-	virtual void Tick(float DeltaTime) override;
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-	virtual void PostInitializeComponents() override;
-
-	virtual void RegisterFSMActions() override;
-
-public:
-	TWeakPtr<UStateAction> CurrentAction;
-
 
 protected:
 	// item

@@ -4,7 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
+
 #include "StateAction.generated.h"
+
+class UAnimMontage;
+class ABaseNonPlayableCharacter;
 
 /**
  * 
@@ -16,11 +20,11 @@ class NOXON_API UStateAction : public UObject
 
 public:
 	UFUNCTION()
-	virtual void OnBegin() PURE_VIRTUAL(UStateAction::OnStart, )
+	virtual void OnBegin(ABaseNonPlayableCharacter* owner) PURE_VIRTUAL(UStateAction::OnStart, )
 
 	UFUNCTION()
-	virtual void OnTick(float deltaTime) PURE_VIRTUAL(UStateAction::OnTick, )
+	virtual void OnTick(ABaseNonPlayableCharacter* owner, float deltaTime) PURE_VIRTUAL(UStateAction::OnTick, )
 
 	UFUNCTION()
-	virtual void OnEnd() PURE_VIRTUAL(UStateAction::OnEnd, )
+	virtual void OnEnd(ABaseNonPlayableCharacter* owner) PURE_VIRTUAL(UStateAcBaseNonPlayableCharactern::OnEnd, )
 };

@@ -26,10 +26,13 @@ protected:
 	ABaseNonPlayableCharacter* ownerNPC = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	FVector velocity;
+	FVector localVelocity;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	EPhase phase;
-	EDamageState damageState;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	EDamageState damagedState;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	EMoveState moveState;
 	
 };

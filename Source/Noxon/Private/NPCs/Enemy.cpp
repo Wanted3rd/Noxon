@@ -11,7 +11,7 @@
 
 AEnemy::AEnemy()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	relationship = ERelationship::Hostile;
 	
 	USkeletalMesh* mesh = BASE_SKM;
@@ -23,27 +23,12 @@ AEnemy::AEnemy()
 	}
 	
 	fsmComponent = CreateDefaultSubobject<UFSMComponent>(TEXT("FSM"));
-	
-}
-
-void AEnemy::PostInitializeComponents()
-{
-	Super::PostInitializeComponents();
-	RegisterFSMActions();
 }
 
 void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
+	
 	GetWorld()->GetSubsystem<UNPCManager>()->RegisterNPC(this);
 }
 
-void AEnemy::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-}
-
-void AEnemy::RegisterFSMActions()
-{
-	
-}
