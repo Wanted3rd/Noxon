@@ -41,7 +41,7 @@ struct FItemKey
 	{
 		return DefId  != NAME_None;
 	}
-};
+}; 
 
 /**
  * 정적 아이템 정의(아이템 DB의 캐시 단위)

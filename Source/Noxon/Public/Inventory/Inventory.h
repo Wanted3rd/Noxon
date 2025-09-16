@@ -7,6 +7,8 @@
 #include "Inventory/InventoryType.h"
 #include "Inventory.generated.h"
 
+class UInputAction;
+class UInputMappingContext;
 class UInventoryWidgetBase;
 class AHandItem;
 
@@ -19,7 +21,8 @@ UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class NOXON_API UInventory : public UActorComponent
 {
     GENERATED_BODY()
-
+    
+/* Field */
 public:
     UInventory();
 
@@ -44,6 +47,40 @@ public:
     UPROPERTY(BlueprintAssignable)
     FOnItemConsumed OnItemConsumed;
 
+private:
+    // 상태(런타임 전용)
+    UPROPERTY(Transient)
+    TMap<FName /*DefId*/, AHandItem*> Instances;
+
+    UPROPERTY(Transient)
+    TSet<FName> InUseHandItems;
+
+    // UI 관련
+    UPROPERTY(EditAnywhere, Category="Inventory", meta=(AllowPrivateAccess="true"))
+    TSubclassOf<UInventoryWidgetBase> InventoryMenuClass;
+    
+    TWeakObjectPtr<class APlayerController> OwnCtrl;
+
+    bool bInventoryOpen = false;
+
+    // Own
+    UPROPERTY(VisibleAnywhere)
+    TObjectPtr<UInventoryWidgetBase> InventoryMenu;
+
+    UPROPERTY(VisibleAnywhere)
+    TObjectPtr<UInputMappingContext> InvIMC;
+
+    UPROPERTY(VisibleAnywhere)
+    TObjectPtr<UInputAction> ToggleIA;
+
+    UPROPERTY(VisibleAnywhere)
+    TObjectPtr<UInputAction> InteractIA;
+    
+
+/* Method */
+public:
+    void Interact();
+    
     // ====== 조회 ======
     UFUNCTION(BlueprintCallable, Category="Inventory")
     void InitializeSlots(int32 InRows, int32 InCols);
@@ -54,6 +91,7 @@ public:
     // ====== 조작 ======
     UFUNCTION(BlueprintCallable, Category="Inventory")
     FInventoryOpResult AddItem(const FItemKey& Key, int32 Quantity, const FItemInstanceState& InStateOpt);
+    
     FInventoryOpResult AddItem(const FItemKey& Key, int32 Quantity)
     {
         return AddItem(Key, Quantity, FItemInstanceState{});
@@ -74,47 +112,47 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="Inventory|Hotbar")
     AHandItem* SelectHotbarSlot(int32 Hotkey);
-
+    
 protected:
     virtual void BeginPlay() override;
+
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
+    void ToggleInventory();
+
+    void OpenInventory();
+
+    void CloseInventory();
+
     // 풀/라이프사이클
     void BuildHandInstancesPool();
-    void ReleaseAllInUseHandItems();
-    void ConstructInventory();
 
+    void ReleaseAllInUseHandItems();
+
+    void ConstructInventory();
+    
     // 내부 유틸
     int32 IndexFromRC(int32 Row, int32 Col) const;
+
     const FInventorySlot& GetSlot(int32 Index) const;
+
     void GetAllKeys(TArray<FItemKey>& OutKeys) const;
+
     int32 FindFirstEmptySlot() const;
+
     int32 GetSlotIndexForHotkey(int32 Hotkey) const;
 
     AHandItem* AcquireHandItemByKey(const FItemKey& Key);
+
     AHandItem* AcquireHandItemByDefId(FName DefId);
+
     bool ReleaseHandItemByDefId(FName DefId);
-
-    // 상태(런타임 전용)
-    UPROPERTY(Transient)
-    TMap<FName /*DefId*/, AHandItem*> Instances;
-
-    UPROPERTY(Transient)
-    TSet<FName> InUseHandItems;
-
-    // UI 관련
-    UPROPERTY(EditAnywhere, Category="Inventory", meta=(AllowPrivateAccess="true"))
-    TSubclassOf<UInventoryWidgetBase> InventoryMenuClass;
-
-    UPROPERTY()
-    TObjectPtr<UInventoryWidgetBase> InventoryMenu;
-
-    TWeakObjectPtr<class APlayerController> OwnCtrl;
-
-private:
+    
     bool IsValidIndex(int32 Index) const { return Slots.IsValidIndex(Index); }
+
     int32 FindStackableSlot(const FItemKey& Key, int32& OutRemainingCapacity) const;
+
     void BroadcastChanged(const TArray<int32>& DirtyIndices);
 };
 

@@ -1,26 +1,139 @@
 #include "Inventory/Inventory.h"
+
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 #include "Inventory/ItemDBSubsystem.h"
 #include "Engine/World.h"
 #include "Engine/GameInstance.h"
+#include "Subsystems/GameInstanceSubsystem.h"
 #include "Engine/DataTable.h"
 #include "GameplayTagsManager.h"
 #include "Blueprint/UserWidget.h"
 #include "UObject/UnrealType.h"
 #include "Items/HandItems/HandItem.h"
 #include "UI/InventoryWidgetBase.h"
+#include "InputAction.h"
+#include "InputMappingContext.h"
 
 UInventory::UInventory()
 {
 	// ActorComponent의 틱 설정 필드는 PrimaryComponentTick
 	PrimaryComponentTick.bCanEverTick = false;
+
+	ConstructorHelpers::FObjectFinder<UInputMappingContext> tmpimc(TEXT("/Script/EnhancedInput.InputMappingContext'/Game/Inventory/IMC_Inventory.IMC_Inventory'"));
+	if (tmpimc.Succeeded())
+		InvIMC = tmpimc.Object.Get();
+
+	ConstructorHelpers::FObjectFinder<UInputAction> tmptoggleia(TEXT("/Script/EnhancedInput.InputAction'/Game/Inventory/IA_ToggleInventory.IA_ToggleInventory'"));
+	if (tmptoggleia.Succeeded())
+		ToggleIA = tmptoggleia.Object.Get();
+	
+	ConstructorHelpers::FObjectFinder<UInputAction> tmpinteractia(TEXT("/Script/EnhancedInput.InputAction'/Game/Inventory/IA_Interact.IA_Interact'"));
+	if (tmpinteractia.Succeeded())
+		InteractIA = tmpinteractia.Object.Get();
+}
+
+void UInventory::BeginPlay()
+{
+	Super::BeginPlay();
+
+	ConstructInventory();
+	BuildHandInstancesPool();
+
+	if (OwnCtrl.IsValid())
+	{
+		UEnhancedInputLocalPlayerSubsystem* Subsystem = OwnCtrl->GetLocalPlayer()->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+		if (IsValid(Subsystem))
+		{
+			if (InvIMC != nullptr)
+			{
+				Subsystem->AddMappingContext(InvIMC.Get(), 0);
+			}
+		}
+		
+		if (OwnCtrl->InputComponent)
+		{
+			UEnhancedInputComponent* EIComp = Cast<UEnhancedInputComponent>(OwnCtrl->InputComponent);
+			
+			if (IsValid(EIComp))
+			{
+				if (ToggleIA != nullptr)
+				{
+					EIComp->BindAction(ToggleIA.Get(), ETriggerEvent::Started, this, &UInventory::ToggleInventory);
+					EIComp->BindAction(InteractIA.Get(), ETriggerEvent::Started, this, &UInventory::Interact);
+				}
+			}
+		}
+		
+	}
+	
+}
+
+void UInventory::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	for (auto& KVP : Instances)
+	{
+		if (IsValid(KVP.Value))
+		{
+			KVP.Value->Destroy();
+		}
+	}
+	Instances.Empty();
+	InUseHandItems.Empty();
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void UInventory::ConstructInventory()
 {
-	OwnCtrl = CastChecked<APlayerController>(GetOwner());
+	OwnCtrl = Cast<APlayerController>(GetOwner());
+	if (OwnCtrl != nullptr)
+	{
+		InventoryMenu = CreateWidget<UInventoryWidgetBase>(OwnCtrl.Get(), InventoryMenuClass);
+		InventoryMenu->AddToViewport();
+		CloseInventory();
+	}
+}
+
+void UInventory::ToggleInventory()
+{
+	if (bInventoryOpen)
+		CloseInventory();
+	else
+		OpenInventory();
 	
-	InventoryMenu = CreateWidget<UInventoryWidgetBase>(OwnCtrl.Get(), InventoryMenuClass);
-	InventoryMenu->AddToViewport();
+}
+
+void UInventory::OpenInventory()
+{
+	if (!IsValid(InventoryMenu)) return;
+	InventoryMenu->SetVisibility(ESlateVisibility::Visible);
+	bInventoryOpen = true;
+
+	FInputModeGameAndUI InputMode;
+	if (!OwnCtrl.IsValid()) return;
+	OwnCtrl->SetInputMode(InputMode);
+	OwnCtrl->SetShowMouseCursor(true);
+
+	// ToggleIMC : AddMappingContext(InvIMC)
+}
+
+void UInventory::CloseInventory()
+{
+	if (!IsValid(InventoryMenu)) return;
+	InventoryMenu->SetVisibility(ESlateVisibility::Collapsed);
+	bInventoryOpen = false;
+
+	FInputModeGameOnly InputMode;
+	OwnCtrl->SetInputMode(InputMode);
+	OwnCtrl->SetShowMouseCursor(false);
+
+	// ToggleIMC : RemoveMappingContext(InvIMC)
+}
+
+void UInventory::Interact()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Interact On"));
 }
 
 void UInventory::InitializeSlots(int32 InRows, int32 InCols)
@@ -74,8 +187,7 @@ bool UInventory::GetSlotView(int32 Index, FInventorySlotView& Out) const
     Out.Quantity = Slots[Index].Quantity;
 
     // DB 서브시스템이 있으면 정적 정의까지 포함해 빌드
-    if (UGameInstance* GI = GetWorld()->GetGameInstance();
-    	IsValid(GI))
+    if (UGameInstance* GI = GetWorld()->GetGameInstance())
     {
         if (UItemDBSubsystem* DB = GI->GetSubsystem<UItemDBSubsystem>())
         {
@@ -363,27 +475,6 @@ FInventoryOpResult UInventory::RemoveAt(int32 Index, int32 Quantity)
 	return FInventoryOpResult::Ok(Dirty);
 }
 
-void UInventory::BeginPlay()
-{
-    Super::BeginPlay();
-    BuildHandInstancesPool();
-}
-
-void UInventory::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-    for (auto& KVP : Instances)
-    {
-        if (IsValid(KVP.Value))
-        {
-            KVP.Value->Destroy();
-        }
-    }
-    Instances.Empty();
-    InUseHandItems.Empty();
-
-    Super::EndPlay(EndPlayReason);
-}
-
 void UInventory::BuildHandInstancesPool()
 {
     Instances.Empty();
@@ -507,6 +598,7 @@ AHandItem* UInventory::AcquireHandItemByDefId(FName DefId)
     if (!Item)
     {
         UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+
         UItemDBSubsystem* DB = GI ? GI->GetSubsystem<UItemDBSubsystem>() : nullptr;
         if (DB && DB->ItemDataTable)
         {
@@ -758,3 +850,4 @@ AHandItem* UInventory::SelectHotbarSlot(int32 Hotkey)
 
     return AcquireHandItemByDefId(Key.DefId);
 }
+

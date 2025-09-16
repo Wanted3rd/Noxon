@@ -36,13 +36,13 @@ struct NOXON_API FStatus
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
-    float Max;
+    float Max = 0.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
-    float Current;
+    float Current = 0.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
-    bool bActive;
+    bool bActive = false;
 };
 
 UCLASS(ClassGroup=(Status), meta=(BlueprintSpawnableComponent))
