@@ -125,6 +125,8 @@ void UNPCManager::ProcessNPCsBatch()
 	    },
 		[visibleDistSquared, tickableDistSquared, npcPos, playerPos](FProximityCheckContext& Context, int32 NPCIndex)
 		{
+			if (!npcPos.IsValidIndex(Context.index))
+				return;
 			const FVector npcLocation = npcPos[Context.index];
 			ENpcActivateType activeType = ENpcActivateType::Default;
 			for (const FVector& PlayerLocation : playerPos)
@@ -156,12 +158,16 @@ void UNPCManager::ProcessNPCsBatch()
 	ownerWorld->GetTimerManager().SetTimerForNextTick(
 		[&, TaskContexts, npcPos]() -> void
 		{
-			if (npcContainer.Num() != npcPos.Num())
+			if (npcContainer.Num() != TaskContexts.Num())
 			{
 				return;
 			}
 			for (int32 i = 0; i < TaskContexts.Num(); ++i)
 			{
+				if (!npcContainer.IsValidIndex(i))
+				{
+					return;
+				}
 				ABaseNonPlayableCharacter* npc = npcContainer[i];
 				switch (TaskContexts[i].activeType)
 				{

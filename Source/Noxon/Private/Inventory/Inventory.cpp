@@ -74,7 +74,8 @@ bool UInventory::GetSlotView(int32 Index, FInventorySlotView& Out) const
     Out.Quantity = Slots[Index].Quantity;
 
     // DB 서브시스템이 있으면 정적 정의까지 포함해 빌드
-    if (UGameInstance* GI = GetWorld()->GetGameInstance())
+    if (UGameInstance* GI = GetWorld()->GetGameInstance();
+    	IsValid(GI))
     {
         if (UItemDBSubsystem* DB = GI->GetSubsystem<UItemDBSubsystem>())
         {
@@ -726,8 +727,8 @@ AHandItem* UInventory::SelectHotbarSlot(int32 Hotkey)
     const FItemKey Key = Slots[SlotIndex].Key;
 
     // 핸드 가능하면 풀에서 꺼내 포인터 반환(없으면 null)
-    UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
-    UItemDBSubsystem* DB = GI ? GI->GetSubsystem<UItemDBSubsystem>() : nullptr;
+    UGameInstance* GI = IsValid(GetWorld()) ? GetWorld()->GetGameInstance() : nullptr;
+    UItemDBSubsystem* DB = IsValid(GI) ? GI->GetSubsystem<UItemDBSubsystem>() : nullptr;
     // 전환 정책: 기존 장착 해제
     ReleaseAllInUseHandItems();
     if (!DB) { return nullptr; }
