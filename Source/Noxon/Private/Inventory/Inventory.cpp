@@ -78,7 +78,7 @@ bool UInventory::GetSlotView(int32 Index, FInventorySlotView& Out) const
     {
         if (UItemDBSubsystem* DB = GI->GetSubsystem<UItemDBSubsystem>())
         {
-            return DB->BuildSlotView(Index, Slots[Index], Out);
+            return (DB->BuildSlotView(Index, Slots[Index], Out));
         }
     }
 
