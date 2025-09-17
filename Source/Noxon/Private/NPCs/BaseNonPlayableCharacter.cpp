@@ -1,6 +1,7 @@
 #include "NPCs/BaseNonPlayableCharacter.h"
 
 #include "Animations/NPCAnimInstance.h"
+#include "GameFlow/GameMode/IngameGameMode.h"
 #include "NPCs/Actions/StateAction.h"
 #include "NPCs/Components/FSMComponent.h"
 #include "NPCs/Manager/NPCManager.h"
@@ -44,11 +45,15 @@ void ABaseNonPlayableCharacter::DeadNPC()
 	prevMoveAction = nullptr;
 	prevDamagedAction = nullptr;
 	// choice drop item here.
-	GetWorld()->GetTimerManager().SetTimer(deadTimer, [&]()->void
+	if (!GetWorld()->GetAuthGameMode<AIngameGameMode>())
 	{
-		// Spawn drop item here.
-		GetWorld()->GetSubsystem<UNPCManager>()->DestroyNPC(this);
-	}, 2.f, false);
+		GetWorld()->GetTimerManager().SetTimer(deadTimer, [&]()->void
+	   {
+		   // Spawn drop item here.
+		   GetWorld()->GetAuthGameMode<AIngameGameMode>()->UnregisterNpc(this);
+		   Destroy();
+	   }, 2.f, false);
+	}
 }
 
 void ABaseNonPlayableCharacter::BeginPlay()

@@ -14,8 +14,6 @@ class NOXON_API ANeutralNPC : public ABaseNonPlayableCharacter
 public:
 	ANeutralNPC();
 
-	virtual void Tick(float DeltaTime) override;
-
 protected:
 	virtual void BeginPlay() override;
 

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Subsystems/WorldSubsystem.h"
+#include "Components/ActorComponent.h"
 #include "NPCManager.generated.h"
 
 
@@ -65,7 +65,7 @@ enum class ENpcActivateType : uint8
  * 
  */
 UCLASS()
-class NOXON_API UNPCManager : public UTickableWorldSubsystem
+class NOXON_API UNPCManager : public UActorComponent
 {
 	GENERATED_BODY()
 
@@ -76,11 +76,14 @@ class NOXON_API UNPCManager : public UTickableWorldSubsystem
 	};
 	
 public:
-	virtual TStatId GetStatId() const override;
-	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
-	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
-	virtual void Tick(float DeltaTime) override;
-	virtual void Deinitialize() override;
+	UNPCManager();
+
+protected:
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+public:
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UFUNCTION()
 	FORCEINLINE void RegisterPlayers(APlayerController* playerController)
@@ -101,9 +104,9 @@ public:
 	void PushNPCsTransformsForWorld();
 
 protected:
-	
 	UFUNCTION()
 	void ProcessNPCsBatch();
+	void ParallelNPCsBatch();
 
 private:
 	void SaveNPCsTransformToJson(const FNPCsTransform& NPCData);
@@ -119,10 +122,10 @@ protected:
 	TArray<ABaseNonPlayableCharacter*> npcContainer;
 
 	UPROPERTY()
-	TSet<ABaseNonPlayableCharacter*> activatedNpcContainer;
+	TMap<ABaseNonPlayableCharacter*, int> activatedNpcContainer;
 
 	UPROPERTY()
-	FLODPropertiesForActivateNPC lodProperties = FLODPropertiesForActivateNPC();
+	FLODPropertiesForActivateNPC lodProperties;
 
 	float batchDeltaTime = 0.f;
 

@@ -74,10 +74,10 @@ bool UInventory::GetSlotView(int32 Index, FInventorySlotView& Out) const
     Out.Quantity = Slots[Index].Quantity;
 
     // DB 서브시스템이 있으면 정적 정의까지 포함해 빌드
-    if (UGameInstance* GI = GetWorld()->GetGameInstance();
-    	IsValid(GI))
+    if (UGameInstance* gi = GetWorld()->GetGameInstance();
+    	IsValid(gi))
     {
-        if (UItemDBSubsystem* DB = GI->GetSubsystem<UItemDBSubsystem>())
+        if (UItemDBSubsystem* DB = gi->GetSubsystem<UItemDBSubsystem>())
         {
             return DB->BuildSlotView(Index, Slots[Index], Out);
         }

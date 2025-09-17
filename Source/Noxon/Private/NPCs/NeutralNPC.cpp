@@ -3,24 +3,33 @@
 
 #include "NPCs/NeutralNPC.h"
 
+#include "GameFlow/GameMode/IngameGameMode.h"
+#include "NPCs/Components/FSMComponent.h"
+#include "Utility/FindHelper.h"
 
-// Sets default values
+
 ANeutralNPC::ANeutralNPC()
 {
-	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
+
+	USkeletalMesh* mesh = BASE_SKM;
+	if (IsValid(mesh))
+	{
+		GetMesh()->SetSkeletalMeshAsset(mesh);
+		GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -90.f));
+		GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
+	}
+	
+	fsmComponent = CreateDefaultSubobject<UFSMComponent>(TEXT("FSM"));
 }
 
-// Called when the game starts or when spawned
 void ANeutralNPC::BeginPlay()
 {
 	Super::BeginPlay();
-	
-}
 
-// Called every frame
-void ANeutralNPC::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
+	AIngameGameMode* gm = GetWorld()->GetAuthGameMode<AIngameGameMode>();
+	if (gm != nullptr)
+	{
+		gm->RegisterNpc(this);
+	}
 }
-

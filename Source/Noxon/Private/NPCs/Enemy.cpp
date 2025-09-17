@@ -3,8 +3,8 @@
 
 #include "NPCs/Enemy.h"
 
+#include "GameFlow/GameMode/IngameGameMode.h"
 #include "NPCs/Components/FSMComponent.h"
-#include "NPCs/Manager/NPCManager.h"
 #include "Utility/DebugHelper.h"
 #include "Utility/FindHelper.h"
 
@@ -29,6 +29,10 @@ void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	GetWorld()->GetSubsystem<UNPCManager>()->RegisterNPC(this);
+	AIngameGameMode* gm = GetWorld()->GetAuthGameMode<AIngameGameMode>();
+	if (gm != nullptr)
+	{
+		gm->RegisterNpc(this);
+	}
 }
 

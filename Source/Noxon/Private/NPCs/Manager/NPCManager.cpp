@@ -14,30 +14,19 @@
 #include "NPCs/Components/FSMComponent.h"
 
 
-TStatId UNPCManager::GetStatId() const
+UNPCManager::UNPCManager()
 {
-	return TStatId();
-}
-
-bool UNPCManager::ShouldCreateSubsystem(UObject* Outer) const
-{
-	UWorld* world = Cast<UWorld>(Outer);
-	//AIngameGameMode* ingameGM = Cast<AIngameGameMode>(UGameplayStatics::GetGameMode(world));
-	//if (!IsValid(world) || !IsValid(ingameGM))
-	//{
-	//	return false;
-	//}
-	
-	return Super::ShouldCreateSubsystem(Outer);
-}
-
-void UNPCManager::OnWorldBeginPlay(UWorld& InWorld)
-{
-	CreateActions();
-	ownerWorld = InWorld.GetWorld();
+	lodProperties = FLODPropertiesForActivateNPC();
 	lodProperties.tickableDist *= lodProperties.tickableDist;
 	lodProperties.visibleDist *= lodProperties.visibleDist;
-	Super::OnWorldBeginPlay(InWorld);
+}
+
+void UNPCManager::BeginPlay()
+{
+	CreateActions();
+	ownerWorld = GetWorld();
+	Super::BeginPlay();
+	
 	PushNPCsTransformsForWorld();
 	
 	// this work is needed in main player class's begin play. for joining to started session.
@@ -47,18 +36,18 @@ void UNPCManager::OnWorldBeginPlay(UWorld& InWorld)
 	}
 }
 
-void UNPCManager::Tick(float DeltaTime)
+void UNPCManager::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-	Super::Tick(DeltaTime);
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	APawn* tempPlayer = playerContainer[0]->GetPawn();
-	for (ABaseNonPlayableCharacter* npc : activatedNpcContainer)
+	for (auto npc : activatedNpcContainer)
 	{
-		npc->SetPhaseAction(phaseActions[npc->GetFSMComponent()->GetCurrentPhase()]);
-		if (FVector::Dist(npc->GetActorLocation(), tempPlayer->GetActorLocation()) < 500.f)
+		npc.Key->SetPhaseAction(phaseActions[npc.Key->GetFSMComponent()->GetCurrentPhase()]);
+		if (FVector::Dist(npc.Key->GetActorLocation(), tempPlayer->GetActorLocation()) < 500.f)
 		{
-			if (npc->GetActorForwardVector().Dot((
-				tempPlayer->GetActorLocation() - npc->GetActorLocation()).GetSafeNormal()) < 0.3f)
-				npc->GetFSMComponent()->ActivateMoveState(EMoveState::Chase);
+			if (npc.Key->GetActorForwardVector().Dot((
+				tempPlayer->GetActorLocation() - npc.Key->GetActorLocation()).GetSafeNormal()) < 0.3f)
+				npc.Key->GetFSMComponent()->ActivateMoveState(EMoveState::Chase);
 		}
 	}
 	if (batchDeltaTime > lodProperties.updateTime)
@@ -70,13 +59,13 @@ void UNPCManager::Tick(float DeltaTime)
 	batchDeltaTime += DeltaTime;
 }
 
-void UNPCManager::Deinitialize()
+void UNPCManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	ownerWorld = nullptr;
 	playerContainer.Empty(0);
 	npcContainer.Empty(0);
 	activatedNpcContainer.Empty(0);
-	Super::Deinitialize();
+	Super::EndPlay(EndPlayReason);
 }
 
 void UNPCManager::ProcessNPCsBatch()
@@ -86,6 +75,17 @@ void UNPCManager::ProcessNPCsBatch()
 		return;
 	}
 
+	for (ABaseNonPlayableCharacter* npc : npcContainer)
+	{
+		for (APlayerController* playerController : playerContainer)
+		{
+			
+		}
+	}
+}
+
+void UNPCManager::ParallelNPCsBatch()
+{
 	//https://dev.epicgames.com/community/learning/tutorials/BdmJ/unreal-engine-multithreading-techniques
 	int32 range = npcContainer.Num() * playerContainer.Num();
 	TArray<FVector> playerPos;
@@ -203,6 +203,15 @@ void UNPCManager::ProcessNPCsBatch()
 	);	
 }
 
+void UNPCManager::DestroyNPC(ABaseNonPlayableCharacter* npc)
+{
+	if (activatedNpcContainer.Contains(npc))
+	{
+		activatedNpcContainer.Remove(npc);
+	}
+	npcContainer.RemoveSingleSwap(npc, EAllowShrinking::Yes);
+}
+
 void UNPCManager::PullNPCsTransformsFromWorld()
 {
 	FNPCsTransform npcsTransform;
@@ -226,21 +235,13 @@ void UNPCManager::PullNPCsTransformsFromWorld()
 }
 
 // Before Begin play... how..?
+
+
 void UNPCManager::PushNPCsTransformsForWorld()
 {
 	FNPCsTransform npcsTransform;
 	
 	
-}
-
-void UNPCManager::DestroyNPC(ABaseNonPlayableCharacter* npc)
-{
-	if (activatedNpcContainer.Contains(npc))
-	{
-		activatedNpcContainer.Remove(npc);
-	}
-	npcContainer.RemoveSingleSwap(npc, EAllowShrinking::Yes);
-	npc->Destroy();
 }
 
 void UNPCManager::SaveNPCsTransformToJson(const FNPCsTransform& NPCData)
