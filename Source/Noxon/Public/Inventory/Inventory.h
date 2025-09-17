@@ -46,6 +46,12 @@ public:
 
     UPROPERTY(BlueprintAssignable)
     FOnItemConsumed OnItemConsumed;
+    
+    UPROPERTY()
+    class UGameInstance* p_GameInstance;
+
+    UPROPERTY()
+    class UItemDBSubsystem* p_DataBase;
 
 private:
     // 상태(런타임 전용)
@@ -55,31 +61,10 @@ private:
     UPROPERTY(Transient)
     TSet<FName> InUseHandItems;
 
-    // UI 관련
-    UPROPERTY(EditAnywhere, Category="Inventory", meta=(AllowPrivateAccess="true"))
-    TSubclassOf<UInventoryWidgetBase> InventoryMenuClass;
-    
-    TWeakObjectPtr<class APlayerController> OwnCtrl;
-
-    bool bInventoryOpen = false;
-
-    // Own
-    UPROPERTY(VisibleAnywhere)
-    TObjectPtr<UInventoryWidgetBase> InventoryMenu;
-
-    UPROPERTY(VisibleAnywhere)
-    TObjectPtr<UInputMappingContext> InvIMC;
-
-    UPROPERTY(VisibleAnywhere)
-    TObjectPtr<UInputAction> ToggleIA;
-
-    UPROPERTY(VisibleAnywhere)
-    TObjectPtr<UInputAction> InteractIA;
-    
 
 /* Method */
 public:
-    void Interact();
+    
     
     // ====== 조회 ======
     UFUNCTION(BlueprintCallable, Category="Inventory")
@@ -119,18 +104,10 @@ protected:
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
-    void ToggleInventory();
-
-    void OpenInventory();
-
-    void CloseInventory();
-
     // 풀/라이프사이클
     void BuildHandInstancesPool();
 
     void ReleaseAllInUseHandItems();
-
-    void ConstructInventory();
     
     // 내부 유틸
     int32 IndexFromRC(int32 Row, int32 Col) const;
