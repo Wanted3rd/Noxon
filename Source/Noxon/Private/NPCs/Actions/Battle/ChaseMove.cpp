@@ -32,5 +32,5 @@ void UChaseMove::OnTick(ABaseNonPlayableCharacter* owner, float deltaTime)
 
 void UChaseMove::OnEnd(ABaseNonPlayableCharacter* owner)
 {
-	owner->GetFSMComponent()->ActivateMoveState(EMoveState::Weave);
+	owner->GetFSMComponent()->ActivateMoveState(EMoveState::Stop);
 }

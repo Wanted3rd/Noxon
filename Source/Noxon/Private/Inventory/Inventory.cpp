@@ -394,13 +394,13 @@ void UInventory::BuildHandInstancesPool()
         return;
     }
 
-    UGameInstance* GI = World->GetGameInstance();
-    if (!GI)
+    UGameInstance* gi = World->GetGameInstance();
+    if (!gi)
     {
         return;
     }
 
-    UItemDBSubsystem* DB = GI->GetSubsystem<UItemDBSubsystem>();
+    UItemDBSubsystem* DB = gi->GetSubsystem<UItemDBSubsystem>();
     if (!DB || !DB->ItemDataTable)
     {
         return;

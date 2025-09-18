@@ -56,6 +56,12 @@ void ABaseNonPlayableCharacter::DeadNPC()
 	}
 }
 
+void ABaseNonPlayableCharacter::ResetPerception()
+{
+	goalLocation = FVector::ZeroVector;
+	targetPawn = nullptr;
+}
+
 void ABaseNonPlayableCharacter::BeginPlay()
 {
 	Super::BeginPlay();

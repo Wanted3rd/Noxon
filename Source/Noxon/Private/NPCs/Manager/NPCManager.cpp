@@ -17,8 +17,7 @@
 UNPCManager::UNPCManager()
 {
 	lodProperties = FLODPropertiesForActivateNPC();
-	lodProperties.tickableDist *= lodProperties.tickableDist;
-	lodProperties.visibleDist *= lodProperties.visibleDist;
+	
 }
 
 void UNPCManager::BeginPlay()
@@ -26,7 +25,8 @@ void UNPCManager::BeginPlay()
 	CreateActions();
 	ownerWorld = GetWorld();
 	Super::BeginPlay();
-	
+	lodProperties.tickableDist *= lodProperties.tickableDist;
+	lodProperties.visibleDist *= lodProperties.visibleDist;
 	PushNPCsTransformsForWorld();
 	
 	// this work is needed in main player class's begin play. for joining to started session.
@@ -39,16 +39,10 @@ void UNPCManager::BeginPlay()
 void UNPCManager::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	APawn* tempPlayer = playerContainer[0]->GetPawn();
 	for (auto npc : activatedNpcContainer)
 	{
 		npc.Key->SetPhaseAction(phaseActions[npc.Key->GetFSMComponent()->GetCurrentPhase()]);
-		if (FVector::Dist(npc.Key->GetActorLocation(), tempPlayer->GetActorLocation()) < 500.f)
-		{
-			if (npc.Key->GetActorForwardVector().Dot((
-				tempPlayer->GetActorLocation() - npc.Key->GetActorLocation()).GetSafeNormal()) < 0.3f)
-				npc.Key->GetFSMComponent()->ActivateMoveState(EMoveState::Chase);
-		}
+		
 	}
 	if (batchDeltaTime > lodProperties.updateTime)
 	{
@@ -77,15 +71,71 @@ void UNPCManager::ProcessNPCsBatch()
 
 	for (ABaseNonPlayableCharacter* npc : npcContainer)
 	{
-		for (APlayerController* playerController : playerContainer)
-		{
-			
-		}
+		ForEachNPCsBatch(npc);
 	}
 }
 
-void UNPCManager::ParallelNPCsBatch()
+void UNPCManager::ForEachNPCsBatch(ABaseNonPlayableCharacter* npc)
 {
+	ENpcActivateType activeType = ENpcActivateType::Default;
+	float dist = 0.f;
+	APlayerController* pc = nullptr;
+	for (TSet<APlayerController*>::TConstIterator iter = playerContainer.CreateConstIterator(); iter; ++iter)
+	{
+		pc = *iter;
+		dist = FVector::DistSquared(pc->GetFocalLocation(), npc->GetActorLocation());
+		if (dist > lodProperties.tickableDist)
+		{
+			activeType = ENpcActivateType::Deactivated;
+		}
+		else if (dist > lodProperties.visibleDist)
+		{
+			activeType = ENpcActivateType::Tickable;
+		}
+		else
+		{
+			activeType = ENpcActivateType::Visible;
+			break;
+		}
+	}
+	switch (activeType)
+	{
+	case ENpcActivateType::Default:
+	case ENpcActivateType::End:
+		{
+			npc->SetActorEnableCollision(ECollisionEnabled::NoCollision);
+		}
+	case ENpcActivateType::Deactivated:
+		{
+			npc->GetFSMComponent()->SetComponentTickEnabled(false);
+			npc->SetActorHiddenInGame(true);
+			
+			if (activatedNpcContainer.Remove(npc))
+			{
+				npc->ResetPerception();
+			}
+		}
+		break;
+	case ENpcActivateType::Visible:
+		{
+			npc->SetActorHiddenInGame(false);
+		}
+	case ENpcActivateType::Tickable:
+		{
+			FProximityCheckContext& context = activatedNpcContainer.FindOrAdd(npc);
+			context.dist = dist;
+			context.direction = (npc->GetActorLocation() - pc->GetFocalLocation()).GetSafeNormal();
+			context.target = pc->GetPawn();
+			
+			npc->GetFSMComponent()->SetComponentTickEnabled(true);
+		}
+		break;
+	}
+	
+}
+
+void UNPCManager::ParallelForNPCsBatch()
+{/*
 	//https://dev.epicgames.com/community/learning/tutorials/BdmJ/unreal-engine-multithreading-techniques
 	int32 range = npcContainer.Num() * playerContainer.Num();
 	TArray<FVector> playerPos;
@@ -120,14 +170,15 @@ void UNPCManager::ParallelNPCsBatch()
 	    [](int32 contextIndex, int32 NumContexts)
 	    {
 	    	FProximityCheckContext context = FProximityCheckContext();
-	    	context.index = contextIndex;
+	    	//context.index = contextIndex;
 		    return context;
 	    },
 		[visibleDistSquared, tickableDistSquared, npcPos, playerPos](FProximityCheckContext& Context, int32 NPCIndex)
 		{
-			if (!npcPos.IsValidIndex(Context.index))
+			/*if (!npcPos.IsValidIndex(Context.index))
 				return;
-			const FVector npcLocation = npcPos[Context.index];
+			#1#
+			const FVector npcLocation = npcPos[NPCIndex/*Context.index#1#];
 			ENpcActivateType activeType = ENpcActivateType::Default;
 			for (const FVector& PlayerLocation : playerPos)
 			{
@@ -146,11 +197,11 @@ void UNPCManager::ParallelNPCsBatch()
 
 			if (activeType > ENpcActivateType::Deactivated)
 			{
-				Context.activeType = activeType;
+				//Context.activeType = activeType;
 			}
 			else
 			{
-				Context.activeType = ENpcActivateType::Deactivated;
+				//Context.activeType = ENpcActivateType::Deactivated;
 			}
 		}		
 	);
@@ -164,7 +215,7 @@ void UNPCManager::ParallelNPCsBatch()
 			}
 			for (int32 i = 0; i < TaskContexts.Num(); ++i)
 			{
-				if (!npcContainer.IsValidIndex(i))
+				if (!npcContainer.Find(i))
 				{
 					return;
 				}
@@ -200,7 +251,8 @@ void UNPCManager::ParallelNPCsBatch()
 				}
 			}
 		}
-	);	
+	);
+*/
 }
 
 void UNPCManager::DestroyNPC(ABaseNonPlayableCharacter* npc)
@@ -209,7 +261,7 @@ void UNPCManager::DestroyNPC(ABaseNonPlayableCharacter* npc)
 	{
 		activatedNpcContainer.Remove(npc);
 	}
-	npcContainer.RemoveSingleSwap(npc, EAllowShrinking::Yes);
+	npcContainer.Remove(npc);
 }
 
 void UNPCManager::PullNPCsTransformsFromWorld()
@@ -235,12 +287,9 @@ void UNPCManager::PullNPCsTransformsFromWorld()
 }
 
 // Before Begin play... how..?
-
-
 void UNPCManager::PushNPCsTransformsForWorld()
 {
 	FNPCsTransform npcsTransform;
-	
 	
 }
 

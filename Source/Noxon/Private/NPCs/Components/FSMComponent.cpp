@@ -13,12 +13,6 @@ UFSMComponent::UFSMComponent()
 	owner = Cast<ACharacter>(GetOwner());
 }
 
-void UFSMComponent::BeginPlay()
-{
-	Super::BeginPlay();
-	ActivatePhase(EPhase::Idle);
-}
-
 void UFSMComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	ResetStates();
@@ -33,48 +27,9 @@ void UFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorCo
 	{
 		return;
 	}
-
-	if (currentPhase == EPhase::Default)
-	{
-		ActivatePhase(EPhase::Idle);
-	}
 }
 
-void UFSMComponent::ActivatePhase(const EPhase& inPhase)
-{
-	if (inPhase == EPhase::Default)
-	{
-		return;
-	}
-	if (currentDamageState == EDamageState::Death)
-	{
-		return;
-	}
-	
-	if (currentPhase > EPhase::InteractPhase)
-	{
-		if (EnumHasAnyFlags(lockedPhase, EPhase::InteractPhase))
-		{
-			return;
-		}
-	}
-	else if (currentPhase > EPhase::BattlePhase)
-	{
-		if (EnumHasAnyFlags(lockedPhase, EPhase::BattlePhase))
-		{
-			return;
-		}
-	}
-	else if (currentPhase > EPhase::OrdinaryPhase)
-	{
-		if (EnumHasAnyFlags(lockedPhase, EPhase::OrdinaryPhase))
-		{
-			return;
-		}
-	}
-	
-	currentPhase |= inPhase;
-}
+
 
 void UFSMComponent::DeactivatePhase(const EPhase& inPhase, const float& cooldownTime)
 {

@@ -7,11 +7,11 @@
 #include "NPCManager.generated.h"
 
 
+class UStateAction;
+
+enum class EPhase : uint8;
 enum class EDamageState : uint8;
 enum class EMoveState : uint8;
-class UStateAction;
-enum class EPhase : uint8;
-class AMainPlayer;
 class ABaseNonPlayableCharacter;
 
 // using with modified dist as squared dist
@@ -23,7 +23,7 @@ public:
 	FLODPropertiesForActivateNPC()
 		: visibleDist(500.f)
 		, tickableDist(1000.f)
-		, updateTime(0.5f)
+		, updateTime(1.f)
 	{}
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=LOD)
@@ -69,10 +69,12 @@ class NOXON_API UNPCManager : public UActorComponent
 {
 	GENERATED_BODY()
 
+	// convert to Array or set in multiplay game 
 	struct FProximityCheckContext
 	{
-		int32 index = -1;
-		ENpcActivateType activeType;
+		float dist = 0.f;
+		FVector direction = FVector::ZeroVector;
+		APawn* target = nullptr;
 	};
 	
 public:
@@ -87,10 +89,10 @@ public:
 
 	UFUNCTION()
 	FORCEINLINE void RegisterPlayers(APlayerController* playerController)
-	{playerContainer.AddUnique(playerController);}
+	{playerContainer.Add(playerController);}
 	UFUNCTION()
-	FORCEINLINE void UnregisterPlayers(APlayerController* playerController)
-	{playerContainer.RemoveSingleSwap(playerController, EAllowShrinking::Yes);}
+	FORCEINLINE void UnregisterPlayers(const APlayerController* playerController)
+	{playerContainer.Remove(playerController);}
 
 	UFUNCTION()
 	void RegisterNPC(ABaseNonPlayableCharacter* npc)
@@ -106,7 +108,9 @@ public:
 protected:
 	UFUNCTION()
 	void ProcessNPCsBatch();
-	void ParallelNPCsBatch();
+	void ForEachNPCsBatch(ABaseNonPlayableCharacter* npc);
+	void ParallelForNPCsBatch();
+	
 
 private:
 	void SaveNPCsTransformToJson(const FNPCsTransform& NPCData);
@@ -116,15 +120,14 @@ private:
 	
 protected:
 	UPROPERTY()
-	TArray<APlayerController*> playerContainer;
+	TSet<APlayerController*> playerContainer;
 	
 	UPROPERTY()
-	TArray<ABaseNonPlayableCharacter*> npcContainer;
+	TSet<ABaseNonPlayableCharacter*> npcContainer;
 
-	UPROPERTY()
-	TMap<ABaseNonPlayableCharacter*, int> activatedNpcContainer;
+	TMap<ABaseNonPlayableCharacter*, FProximityCheckContext> activatedNpcContainer;
 
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=LOD)
 	FLODPropertiesForActivateNPC lodProperties;
 
 	float batchDeltaTime = 0.f;
