@@ -18,4 +18,8 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class UCanvasPanel> CanvasPanel;
+
+protected:
+	/** Forwards the assigned inventory to the grid widget so it can mirror slot data. */
+	virtual void OnInventoryAssigned(class UInventory* InInventory) override;
 };

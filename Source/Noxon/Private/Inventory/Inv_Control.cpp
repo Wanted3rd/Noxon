@@ -104,6 +104,12 @@ void UInv_Control::ConstructInventory()
 
 	if (IsValid(InventoryMenu))
 	{
+		if (Inventory.IsValid())
+		{
+			// Share the inventory component with the UI so it can build and refresh slot widgets.
+			InventoryMenu->InitializeInventory(Inventory.Get());
+		}
+
 		InventoryMenu->AddToViewport();
 		CloseInventory();
 	}
@@ -195,12 +201,12 @@ void UInv_Control::TraceItem()
 
 	if (ThisActor.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Started tracing a new actor."))
+		UE_LOG(LogTemp, Warning, TEXT("Started tracing a new actor."));
 	}
 
 	if (LastActor.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Stopped tracing last actor."))
+		UE_LOG(LogTemp, Warning, TEXT("Stopped tracing last actor."));
 	}
 }
 
@@ -218,6 +224,12 @@ void UInv_Control::RefreshOwnerReferences()
 {
 	CacheOwnerController();
 	CacheInventoryComponent();
+
+	if (IsValid(InventoryMenu) && Inventory.IsValid())
+	{
+		// Re-inject the freshly cached inventory so the UI stays in sync after controller swaps.
+		InventoryMenu->InitializeInventory(Inventory.Get());
+	}
 }
 
 void UInv_Control::CacheOwnerController()

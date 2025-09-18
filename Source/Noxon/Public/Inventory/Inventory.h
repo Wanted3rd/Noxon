@@ -103,6 +103,22 @@ protected:
 
 private:
     // 풀/라이프사이클
+    /**
+     * Seeds the first inventory slot with a BaseItem-derived test entry so drag & drop can be exercised.
+     * Skips execution if the first slot already contains data to avoid overwriting real gameplay state.
+     */
+    void SeedTestItemFromBaseItem();
+
+    /**
+     * Builds a slot view from the BaseItem test payload when no data-table entry exists.
+     * @param Slot  Inventory slot that should contain the BaseItem test data.
+     * @param Out   Filled view structure consumed by inventory UI widgets.
+     * @return True if the slot matched the BaseItem test payload, false otherwise.
+     */
+    bool TryBuildSlotViewFromBaseItem(const FInventorySlot& Slot, FInventorySlotView& Out) const;
+
+    /** Hard-coded DefId used for the BaseItem-backed test slot. */
+    static const FName TestItemDefId;
     void BuildHandInstancesPool();
 
     void ReleaseAllInUseHandItems();
@@ -130,4 +146,13 @@ private:
 
     void BroadcastChanged(const TArray<int32>& DirtyIndices);
 };
+
+
+
+
+
+
+
+
+
 

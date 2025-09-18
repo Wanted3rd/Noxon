@@ -8,8 +8,11 @@
 #include "GameplayTagsManager.h"
 #include "UObject/UnrealType.h"
 #include "Items/HandItems/HandItem.h"
+#include "Items/BaseItem.h"
 
 
+
+const FName UInventory::TestItemDefId(TEXT("BaseItem_Test"));
 
 UInventory::UInventory()
 {
@@ -61,13 +64,15 @@ void UInventory::InitializeSlots(int32 InRows, int32 InCols)
 
 	const int32 Count = NumRows * NumCols;
 	Slots.SetNum(Count);
-	for (int32 i=0; i<Count; ++i)
+	for (int32 i = 0; i < Count; ++i)
 	{
 		Slots[i].SlotIndex = i;
 		Slots[i].Clear();
 	}
 
-	// 인벤토리 열릴 때, 보유 키들 프리패치(아이콘 스트리밍) 하면 UX 좋아짐
+	SeedTestItemFromBaseItem();
+
+	// Prefetch known item keys so asset streaming happens before the inventory UI opens
 	if (IsValid(p_DataBase))
 	{
 		TArray<FItemKey> Keys;
@@ -75,13 +80,12 @@ void UInventory::InitializeSlots(int32 InRows, int32 InCols)
 		p_DataBase->Prefetch(Keys);
 	}
 
-	// 초기 전체 리프레시를 원하면 모든 인덱스 브로드캐스트
+	// Broadcast a full refresh so listeners rebuild every slot at initialization
 	TArray<int32> AllIndices;
 	AllIndices.Reserve(Count);
 	for (int32 i=0; i<Count; ++i) { AllIndices.Add(i); }
 	BroadcastChanged(AllIndices);
 }
-
 int32 UInventory::IndexFromRC(int32 Row, int32 Col) const
 {
 	if (Row < 0 || Col < 0 || Row >= NumRows || Col >= NumCols) return INDEX_NONE;
@@ -96,24 +100,35 @@ const FInventorySlot& UInventory::GetSlot(int32 Index) const
 
 bool UInventory::GetSlotView(int32 Index, FInventorySlotView& Out) const
 {
-    if (!IsValidIndex(Index)) return false;
-
-    // 기본 뷰(빈 슬롯 표시용) 미리 채워둠
-    Out = FInventorySlotView{};
-    Out.SlotIndex = Index;
-    Out.Key = Slots[Index].Key;
-    Out.Quantity = Slots[Index].Quantity;
-
-    // DB 서브시스템이 있으면 정적 정의까지 포함해 빌드
-    if (IsValid(p_DataBase))
+	if (!IsValidIndex(Index))
 	{
-    	return (p_DataBase->BuildSlotView(Index, Slots[Index], Out));
-    }
- 
-    // DB가 없어도 빈 슬롯은 UI에서 사각형으로 표시 가능하도록 true 반환
-    return Slots[Index].IsEmpty();
-}
+		return false;
+	}
 
+	const FInventorySlot& Slot = Slots[Index];
+
+	Out = FInventorySlotView{};
+	Out.SlotIndex = Index;
+	Out.Key = Slot.Key;
+	Out.Quantity = Slot.Quantity;
+
+	if (IsValid(p_DataBase))
+	{
+		if (p_DataBase->BuildSlotView(Index, Slot, Out))
+		{
+			return true;
+		}
+	}
+
+	// Fall back to BaseItem defaults so the seeded test entry can render without data-table support.
+	if (TryBuildSlotViewFromBaseItem(Slot, Out))
+	{
+		Out.SlotIndex = Index;
+		return true;
+	}
+
+	return Slot.IsEmpty();
+}
 void UInventory::GetAllKeys(TArray<FItemKey>& OutKeys) const
 {
 	OutKeys.Reset();
@@ -389,6 +404,84 @@ FInventoryOpResult UInventory::RemoveAt(int32 Index, int32 Quantity)
 	return FInventoryOpResult::Ok(Dirty);
 }
 
+void UInventory::SeedTestItemFromBaseItem()
+{
+    // Guard: only seed when the first slot exists and is empty right after initialization so real gameplay data stays intact.
+    if (!Slots.IsValidIndex(0) || !Slots[0].IsEmpty())
+    {
+        return;
+    }
+
+    const ABaseItem* DefaultItem = ABaseItem::StaticClass()->GetDefaultObject<ABaseItem>();
+    if (!DefaultItem)
+    {
+        return;
+    }
+
+    // Mirror the BaseItem property bag into the slot so UI drag & drop tests have tangible data without external assets.
+    const FItemProperty& PropertyBag = DefaultItem->GetItemProperty();
+
+    FInventorySlot& FirstSlot = Slots[0];
+    FirstSlot.Key.DefId = TestItemDefId;
+
+    int32 EffectiveQuantity = 1;
+    if (PropertyBag.bQuantity)
+    {
+        const int32 SourceQuantity = PropertyBag.quantity > 0 ? PropertyBag.quantity : 1;
+        const int32 MaxQuantity = PropertyBag.maxQuantity > 0 ? PropertyBag.maxQuantity : SourceQuantity;
+        const int32 ClampedMax = MaxQuantity > 0 ? MaxQuantity : SourceQuantity;
+        EffectiveQuantity = FMath::Clamp(SourceQuantity, 1, ClampedMax > 0 ? ClampedMax : 1);
+    }
+    FirstSlot.Quantity = EffectiveQuantity;
+
+    FirstSlot.InstanceState = FItemInstanceState{};
+    FirstSlot.InstanceState.InstanceId = FGuid::NewGuid();
+    if (PropertyBag.bDurability)
+    {
+        FirstSlot.InstanceState.Durability = static_cast<int32>(PropertyBag.durability);
+    }
+    if (PropertyBag.bMagazine)
+    {
+        FirstSlot.InstanceState.Magazine = PropertyBag.magazine;
+        FirstSlot.InstanceState.Reserve = PropertyBag.magazine;
+    }
+}
+
+bool UInventory::TryBuildSlotViewFromBaseItem(const FInventorySlot& Slot, FInventorySlotView& Out) const
+{
+    if (Slot.Key.DefId != TestItemDefId)
+    {
+        return false;
+    }
+
+    const ABaseItem* DefaultItem = ABaseItem::StaticClass()->GetDefaultObject<ABaseItem>();
+    if (!DefaultItem)
+    {
+        return false;
+    }
+
+    // Translate the BaseItem property bag into UI-friendly view data so widgets can render the seeded test slot.
+    const FItemProperty& PropertyBag = DefaultItem->GetItemProperty();
+
+    Out.SlotIndex = Slot.SlotIndex;
+    Out.Key = Slot.Key;
+    Out.Quantity = Slot.Quantity;
+    Out.DisplayName = PropertyBag.itemName.IsNone() ? FText::FromString(TEXT("BaseItem Test")) : FText::FromName(PropertyBag.itemName);
+    Out.MaxStackSize = (PropertyBag.bQuantity && PropertyBag.maxQuantity > 0) ? PropertyBag.maxQuantity : 1;
+    Out.bStackable = Out.MaxStackSize > 1;
+
+    if (PropertyBag.icon != nullptr)
+    {
+        Out.Icon = PropertyBag.icon;
+    }
+
+    Out.RemainingTime = Slot.InstanceState.RemainingTime;
+    Out.Durability = PropertyBag.bDurability ? static_cast<int32>(PropertyBag.durability) : Slot.InstanceState.Durability;
+    Out.Magazine = PropertyBag.bMagazine ? PropertyBag.magazine : Slot.InstanceState.Magazine;
+    Out.Reserve = Slot.InstanceState.Reserve;
+
+    return true;
+}
 void UInventory::BuildHandInstancesPool()
 {
     Instances.Empty();
@@ -754,4 +847,3 @@ AHandItem* UInventory::SelectHotbarSlot(int32 Hotkey)
 
     return AcquireHandItemByDefId(Key.DefId);
 }
-
