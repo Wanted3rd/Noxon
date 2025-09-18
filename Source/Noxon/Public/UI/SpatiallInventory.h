@@ -4,8 +4,6 @@
 #include "InventoryWidgetBase.h"
 #include "SpatiallInventory.generated.h"
 
-class UCanvasPanel;
-class UInventoryGrid;
 
 UCLASS()
 class NOXON_API USpatiallInventory : public UInventoryWidgetBase
@@ -16,8 +14,8 @@ public:
 	virtual void NativeOnInitialized() override;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UInventoryGrid> Grid_BackPack;
+	TObjectPtr<class UInventoryGrid> Grid_BackPack;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UCanvasPanel> CanvasPanel;
+	TObjectPtr<class UCanvasPanel> CanvasPanel;
 };

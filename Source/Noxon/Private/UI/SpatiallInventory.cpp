@@ -7,8 +7,5 @@ void USpatiallInventory::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	if (Grid_BackPack)
-	{
-		Grid_BackPack->SetOwningCanvas(CanvasPanel);
-	}
+	Grid_BackPack->SetOwningCanvas(CanvasPanel);
 }
