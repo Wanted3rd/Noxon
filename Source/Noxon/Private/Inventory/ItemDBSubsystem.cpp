@@ -74,11 +74,8 @@ bool UItemDBSubsystem::BuildSlotView(int32 SlotIndex, const FInventorySlot& Slot
     OutView.bStackable = Def.bStackable;
     OutView.Icon = Def.Icon;
 
-    // 인스턴스 상태 전달(필요한 것만)
-    OutView.RemainingTime = Slot.InstanceState.RemainingTime;
+    // 인스턴스 상태 전달(필요한 필드만 노출)
     OutView.Durability = Slot.InstanceState.Durability;
-    OutView.Magazine = Slot.InstanceState.Magazine;
-    OutView.Reserve = Slot.InstanceState.Reserve;
     return true;
 }
 

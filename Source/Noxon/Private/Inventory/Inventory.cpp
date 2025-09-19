@@ -5,11 +5,10 @@
 #include "Engine/GameInstance.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Engine/DataTable.h"
-#include "GameplayTagsManager.h"
 #include "UObject/UnrealType.h"
 #include "Items/HandItems/HandItem.h"
 #include "Items/BaseItem.h"
-
+#include "Items/HandItems/Ak47.h"
 
 
 const FName UInventory::TestItemDefId(TEXT("BaseItem_Test"));
@@ -38,6 +37,8 @@ void UInventory::BeginPlay()
 	}
 	
 	BuildHandInstancesPool();
+	FItemInstanceState tmp = FItemInstanceState(FGuid("AK47"));
+	AddItem(FItemKey(FName("AK47")), 1, tmp);
 	
 }
 
@@ -440,11 +441,6 @@ void UInventory::SeedTestItemFromBaseItem()
     {
         FirstSlot.InstanceState.Durability = static_cast<int32>(PropertyBag.durability);
     }
-    if (PropertyBag.bMagazine)
-    {
-        FirstSlot.InstanceState.Magazine = PropertyBag.magazine;
-        FirstSlot.InstanceState.Reserve = PropertyBag.magazine;
-    }
 }
 
 bool UInventory::TryBuildSlotViewFromBaseItem(const FInventorySlot& Slot, FInventorySlotView& Out) const
@@ -475,10 +471,7 @@ bool UInventory::TryBuildSlotViewFromBaseItem(const FInventorySlot& Slot, FInven
         Out.Icon = PropertyBag.icon;
     }
 
-    Out.RemainingTime = Slot.InstanceState.RemainingTime;
     Out.Durability = PropertyBag.bDurability ? static_cast<int32>(PropertyBag.durability) : Slot.InstanceState.Durability;
-    Out.Magazine = PropertyBag.bMagazine ? PropertyBag.magazine : Slot.InstanceState.Magazine;
-    Out.Reserve = Slot.InstanceState.Reserve;
 
     return true;
 }
@@ -755,16 +748,7 @@ FInventoryOpResult UInventory::UseItemAt(int32 SlotIndex)
     }
 
     // 2) 소비 가능 항목이면 1개 소모
-    bool bConsumable = false;
-    const FGameplayTag ConsumableTag = FGameplayTag::RequestGameplayTag(FName("Item.Consumable"), false);
-    if (ConsumableTag.IsValid() && Def.Tags.HasTag(ConsumableTag))
-    {
-        bConsumable = true;
-    }
-    else if (Def.bStackable)
-    {
-        bConsumable = true; // 태그가 없어도 스택형이면 기본적으로 소모 가능 처리
-    }
+    bool bConsumable = Def.bStackable; // 태그 제거: 스택 가능 아이템은 기본적으로 소비 가능으로 간주
 
     if (bConsumable)
     {

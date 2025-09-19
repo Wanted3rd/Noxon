@@ -47,7 +47,7 @@ struct FItemProperty
 	float heal = 0.f;
 };
 
-UCLASS()
+UCLASS(BlueprintType)
 class NOXON_API ABaseItem : public AActor
 {
 	GENERATED_BODY()
@@ -57,6 +57,8 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	const FItemProperty& GetItemProperty() const {return property;}
+
+	void RegisterStaticData();
 
 protected:
 	virtual void BeginPlay() override;

@@ -69,6 +69,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<class AHandItem> handItemClass;
 
+	UPROPERTY(VisibleAnywhere)
+	class AHandItem* HandItem = nullptr;
 	
 	
 	//Input Action - IA
