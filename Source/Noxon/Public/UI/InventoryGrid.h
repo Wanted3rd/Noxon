@@ -29,6 +29,8 @@ public:
 	/** Forces every visual slot to refresh using the current inventory data. */
 	void RefreshAllSlots();
 
+	bool HandleSlotDrop(int32 FromIndex, int32 ToIndex);
+
 private:
 	void GridConstruct();
 
