@@ -2,15 +2,24 @@
 
 
 #include "NPCs/Components/FSMComponent.h"
+#include "NPCs/Datas/StateEnums.h"
 
 #include "GameFramework/Character.h"
 
 
 UFSMComponent::UFSMComponent()
+	:currentPhaseState(EPhase::Default), lockedPhaseState(EPhase::Default)
+	, currentMoveState(EMoveState::Default), currentDamageState(EDamageState::Default)
 {
 	PrimaryComponentTick.bCanEverTick = true;
 
 	owner = Cast<ACharacter>(GetOwner());
+}
+
+void UFSMComponent::BeginPlay()
+{
+	Super::BeginPlay();
+	currentPhaseState = EPhase::Default;
 }
 
 void UFSMComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -27,21 +36,56 @@ void UFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorCo
 	{
 		return;
 	}
+	if (currentPhaseState == EPhase::Default)
+	{
+		ActivatePhaseState(EPhase::Idle);
+	}
 }
 
 
+void UFSMComponent::ActivatePhaseState(const EPhase& inPhaseState)
+{
+	if (inPhaseState == EPhase::Default)
+	{
+		return;
+	}
 
-void UFSMComponent::DeactivatePhase(const EPhase& inPhase, const float& cooldownTime)
+	if (currentPhaseState > EPhase::InteractPhase)
+	{
+		if (EnumHasAnyFlags(lockedPhaseState, EPhase::InteractPhase))
+		{
+			return;
+		}
+	}
+	else if (currentPhaseState > EPhase::BattlePhase)
+	{
+		if (EnumHasAnyFlags(lockedPhaseState, EPhase::BattlePhase))
+		{
+			return;
+		}
+	}
+	else if (currentPhaseState > EPhase::OrdinaryPhase)
+	{
+		if (EnumHasAnyFlags(lockedPhaseState, EPhase::OrdinaryPhase))
+		{
+			return;
+		}
+	}
+	
+	currentPhaseState |= inPhaseState;
+}
+
+void UFSMComponent::DeactivatePhaseState(const EPhase& inPhase, const float& cooldownTime)
 {
 	if (cooldownTime > 0.f)
 	{
-		lockedPhase |= inPhase;
+		lockedPhaseState |= inPhase;
 		GetWorld()->GetTimerManager().SetTimer(lockTimer, [&, inPhase]()
 		{
-			lockedPhase &= ~inPhase;
+			lockedPhaseState &= ~inPhase;
 		}, cooldownTime, false);
 	}
-	currentPhase &= ~inPhase;
+	currentPhaseState &= ~inPhase;
 }
 
 void UFSMComponent::ActivateMoveState(const EMoveState& inMoveState)
@@ -51,7 +95,7 @@ void UFSMComponent::ActivateMoveState(const EMoveState& inMoveState)
 		return;
 	}
 	uint8 stateValue = static_cast<uint8>(inMoveState);
-	if (EnumHasAnyFlags(currentPhase, EPhase::BattlePhase))
+	if (EnumHasAnyFlags(currentPhaseState, EPhase::BattlePhase))
 	{
 		if (stateValue > static_cast<uint8>(EMoveState::BattlePhase))
 		{
@@ -59,7 +103,7 @@ void UFSMComponent::ActivateMoveState(const EMoveState& inMoveState)
 		}
 		return;
 	}
-	if (EnumHasAnyFlags(currentPhase, EPhase::OrdinaryPhase))
+	if (EnumHasAnyFlags(currentPhaseState, EPhase::OrdinaryPhase))
 	{
 		if (stateValue > static_cast<uint8>(EMoveState::OrdinaryPhase))
 		{
@@ -67,7 +111,7 @@ void UFSMComponent::ActivateMoveState(const EMoveState& inMoveState)
 		}
 		return;
 	}
-	if (EnumHasAnyFlags(currentPhase, EPhase::InteractPhase))
+	if (EnumHasAnyFlags(currentPhaseState, EPhase::InteractPhase))
 	{
 		currentMoveState = EMoveState::Stop;
 	}
@@ -86,7 +130,11 @@ void UFSMComponent::ActivateDamagedState(const EDamageState& inDamageState)
 void UFSMComponent::ResetStates()
 {
 	GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
-	currentPhase = EPhase::Default;
-	lockedPhase = EPhase::Default;
+	currentPhaseState = EPhase::End;
+	lockedPhaseState = EPhase::End;
+	currentMoveState = EMoveState::End;
+	currentDamageState = EDamageState::End;
 }
+
+
 

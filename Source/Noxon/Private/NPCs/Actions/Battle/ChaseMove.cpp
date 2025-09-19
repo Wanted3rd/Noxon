@@ -6,6 +6,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "NPCs/BaseNonPlayableCharacter.h"
 #include "NPCs/Components/FSMComponent.h"
+#include "NPCs/Components/PerceptionComponent.h"
+#include "NPCs/Datas/StateEnums.h"
 
 void UChaseMove::OnBegin(ABaseNonPlayableCharacter* owner)
 {
@@ -14,7 +16,7 @@ void UChaseMove::OnBegin(ABaseNonPlayableCharacter* owner)
 
 void UChaseMove::OnTick(ABaseNonPlayableCharacter* owner, float deltaTime)
 {
-	AActor* target = owner->GetTargetPawn();
+	AActor* target = owner->GetPerceptionComp()->GetTarget();
 	FVector directionToTarget = FVector::ZeroVector;
 	float distanceToTarget = -1.f;
 	if (IsValid(target))
@@ -24,13 +26,13 @@ void UChaseMove::OnTick(ABaseNonPlayableCharacter* owner, float deltaTime)
 		directionToTarget = directionToTarget.GetSafeNormal();
 	}
 	owner->AddMovementInput(directionToTarget);
-	if (distanceToTarget > 0.f && distanceToTarget < owner->GetPerceptionProperties().gunFireRange)
+	if (distanceToTarget > 0.f && distanceToTarget < owner->GetPerceptionComp()->GetPerceptionProperties().gunFireRange)
 	{
-		owner->GetFSMComponent()->ActivatePhase(EPhase::HipFire);
+		owner->GetFSMComp()->ActivatePhaseState(EPhase::HipFire);
 	}
 }
 
 void UChaseMove::OnEnd(ABaseNonPlayableCharacter* owner)
 {
-	owner->GetFSMComponent()->ActivateMoveState(EMoveState::Stop);
+	owner->GetFSMComp()->ActivateMoveState(EMoveState::Stop);
 }

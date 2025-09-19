@@ -3,33 +3,34 @@
 #include "Animations/NPCAnimInstance.h"
 #include "GameFlow/GameMode/IngameGameMode.h"
 #include "NPCs/Actions/StateAction.h"
+#include "NPCs/Components/ActionComponent.h"
 #include "NPCs/Components/FSMComponent.h"
+#include "NPcs/Datas/StateEnums.h"
+#include "NPCs/Components/PerceptionComponent.h"
 #include "NPCs/Manager/NPCManager.h"
 #include "Utility/FindHelper.h"
+#include "AIController.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 
 ABaseNonPlayableCharacter::ABaseNonPlayableCharacter()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	animFactory = FinderHelper::GetClassFromConstructor<UNPCAnimInstance>(TEXT("/Game/NPCs/ABP_NPC_C"));
 	if (animFactory != nullptr)
 	{
 		GetMesh()->SetAnimInstanceClass(animFactory);
 	}
-	
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
-void ABaseNonPlayableCharacter::Tick(float DeltaTime)
+void ABaseNonPlayableCharacter::BeginPlay()
 {
-	Super::Tick(DeltaTime);
-
-	DamagedTick(DeltaTime);
-	if (fsmComponent->GetCurrentDamagedState() == EDamageState::Death)
-	{
-		return;
-	}
-	MoveTick(DeltaTime);
-	PhaseTick(DeltaTime);
+	Super::BeginPlay();
+	initTransform = GetActorTransform();
+	aiController = Cast<AAIController>(GetController());
+	curHp = maxHp;
 }
 
 void ABaseNonPlayableCharacter::DeadNPC()
@@ -38,14 +39,11 @@ void ABaseNonPlayableCharacter::DeadNPC()
 	{
 		return;
 	}
-	currentPhaseAction = nullptr;
-	currentMoveAction = nullptr;
-	currentDamagedAction = nullptr;
-	prevPhaseAction = nullptr;
-	prevMoveAction = nullptr;
-	prevDamagedAction = nullptr;
+	GetActionComp()->ResetActions();
+	GetPerceptionComp()->ResetPerception();
+	
 	// choice drop item here.
-	if (!GetWorld()->GetAuthGameMode<AIngameGameMode>())
+	if (GetWorld()->GetAuthGameMode<AIngameGameMode>())
 	{
 		GetWorld()->GetTimerManager().SetTimer(deadTimer, [&]()->void
 	   {
@@ -56,81 +54,15 @@ void ABaseNonPlayableCharacter::DeadNPC()
 	}
 }
 
-void ABaseNonPlayableCharacter::ResetPerception()
+AAIController* ABaseNonPlayableCharacter::GetAIController()
 {
-	goalLocation = FVector::ZeroVector;
-	targetPawn = nullptr;
+	return IsValid(aiController) ? aiController : nullptr;
 }
 
-void ABaseNonPlayableCharacter::BeginPlay()
+void ABaseNonPlayableCharacter::EnableComponentTick(bool bActive)
 {
-	Super::BeginPlay();
+	fsmComponent->SetComponentTickEnabled(bActive);
+	perceptionComponent->SetComponentTickEnabled(bActive);
+	actionComponent->SetComponentTickEnabled(bActive);
 }
 
-void ABaseNonPlayableCharacter::PhaseTick(float deltaTime)
-{
-	if (currentPhaseAction != prevPhaseAction)
-	{
-		if (prevPhaseAction)
-		{
-			prevPhaseAction->OnEnd(this);
-		}
-		prevPhaseAction = currentPhaseAction;
-		if (currentPhaseAction)
-		{
-			currentPhaseAction->OnBegin(this);
-		}
-		
-		return;
-	}
-
-	if (currentPhaseAction)
-	{
-		currentPhaseAction->OnTick(this, deltaTime);
-	}
-}
-
-void ABaseNonPlayableCharacter::MoveTick(float deltaTime)
-{
-	if (currentMoveAction != prevMoveAction)
-	{
-		if (prevMoveAction)
-		{
-			prevMoveAction->OnEnd(this);
-		}
-		prevMoveAction = currentMoveAction;
-		if (currentMoveAction)
-		{
-			currentMoveAction->OnBegin(this);
-		}
-		
-		return;
-	}
-
-	if (currentMoveAction)
-	{
-		currentMoveAction->OnTick(this, deltaTime);
-	}
-}
-
-void ABaseNonPlayableCharacter::DamagedTick(float deltaTime)
-{
-	if (currentDamagedAction != prevDamagedAction)
-	{
-		if (prevDamagedAction)
-		{
-			prevDamagedAction->OnEnd(this);
-		}
-		prevDamagedAction = currentDamagedAction;
-		if (currentDamagedAction)
-		{
-			currentDamagedAction->OnBegin(this);
-		}
-		return;
-	}
-
-	if (currentDamagedAction)
-	{
-		currentDamagedAction->OnTick(this, deltaTime);
-	}
-}

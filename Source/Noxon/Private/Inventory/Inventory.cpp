@@ -506,8 +506,8 @@ AHandItem* UInventory::AcquireHandItemByDefId(FName DefId)
     // 없으면 스폰 시도(데이터테이블 기준)
     if (!Item)
     {
-        UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
-        UItemDBSubsystem* DB = GI ? GI->GetSubsystem<UItemDBSubsystem>() : nullptr;
+        UGameInstance* gi = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+        UItemDBSubsystem* DB = gi ? gi->GetSubsystem<UItemDBSubsystem>() : nullptr;
         if (DB && DB->ItemDataTable)
         {
             static const FString Ctx = TEXT("UInventory::AcquireHandItemByDefId");

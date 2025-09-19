@@ -44,6 +44,11 @@ protected:
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	UFUNCTION()
+	virtual void SetActive(bool bActive);
+	UFUNCTION()
+	virtual void OnHitSth(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit );
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
 
 public: // components
 	UPROPERTY(VisibleAnywhere)
@@ -55,19 +60,16 @@ public: // components
 
 	// 일정시간이 흐르면 없애고 싶다.
 	UPROPERTY(EditAnywhere, Category=Settings)
-	float destroyTime = 2;
-	float currentTime = 0;
+	float destroyTime = 2.f;
+	float currentTime = 0.f;
 
 	UPROPERTY()
 	class AMainPlayer* player;
 	
 	// 활성화 세팅 함수
-	UFUNCTION()
-	virtual void SetActive(bool bActive);
+	
+	FTimerHandle projectileTimerHandle;
 
 	UPROPERTY(EditAnywhere)
-	float speed = 10000;
-
-	// 에디터에서 속성을 수정했을 때, 다른 속성들도 수정할 수 있게 하고 싶다.
-	virtual  void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;	
+	float speed = 10000.f;
 };

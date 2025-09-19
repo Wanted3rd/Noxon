@@ -6,14 +6,6 @@
 #include "BaseNonPlayableCharacter.h"
 #include "Enemy.generated.h"
 
-#pragma region Forward Declarations
-
-class UFSMComponent;
-class AHandItem;
-class UStateAction;
-
-#pragma endregion Forward Declarations
-
 
 UCLASS()
 class NOXON_API AEnemy : public ABaseNonPlayableCharacter
@@ -29,8 +21,5 @@ protected:
 	virtual void BeginPlay() override;
 
 protected:
-	// item
-
-
 	// coord in worldMap (table, rand(0~row end) )
 };

@@ -4,39 +4,12 @@
 #include "Components/ActorComponent.h"
 #include "FSMComponent.generated.h"
 
-#pragma region State Enum
 
-// need to limit actions count under 15
-// need to divide from this file
-
-
-UENUM(BlueprintType)
-enum class EDamageState : uint8
-{
-	Default = 0 UMETA(Hidden),
-	SmallDamaged,
-	LargeDamaged,
-	Death,
-	End UMETA(Hidden)
-};
-
-UENUM(BlueprintType)
-enum class EMoveState : uint8
-{
-	Default = 0 UMETA(Hidden),
-	OrdinaryPhase = 1 << 4,
-	Stop,
-	Patrol,
-	BattlePhase = 1 << 5,
-	Chase,
-	Weave,
-	Hide,
-	End UMETA(Hidden)
-};
-
-#pragma endregion State Enum
 
 #pragma region Forward Declarations
+enum class EPhase : uint8;
+enum class EDamageState : uint8;
+enum class EMoveState : uint8;
 class ACharacter;
 class UStateAction;
 
@@ -54,14 +27,14 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UFUNCTION(BlueprintCallable)
-	FORCEINLINE EPhase GetCurrentPhase() const {return currentPhase;}	
+	FORCEINLINE EPhase GetCurrentPhase() const {return currentPhaseState;}	
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE EMoveState GetCurrentMoveState() const {return currentMoveState;}
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE EDamageState GetCurrentDamagedState() const {return currentDamageState;}
 
-	virtual void ActivateState(const uint8& inPhase) {}
-	virtual void DeactivateState(const EPhase& inPhase, const float& cooldownTime = -1.f);
+	void ActivatePhaseState(const EPhase& inPhaseState);
+	void DeactivatePhaseState(const EPhase& inPhase, const float& cooldownTime = -1.f);
 	void ActivateMoveState(const EMoveState& inMoveState);
 	void ActivateDamagedState(const EDamageState& inDamageState);
 
@@ -75,14 +48,14 @@ private:
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	uint8 currentState = 0;
+	EPhase currentPhaseState;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	uint8 lockedState = 0;
+	EPhase lockedPhaseState;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EMoveState currentMoveState = EMoveState::Default;
+	EMoveState currentMoveState;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EDamageState currentDamageState = EDamageState::Default;
+	EDamageState currentDamageState;
 
 	FTimerHandle lockTimer;
 

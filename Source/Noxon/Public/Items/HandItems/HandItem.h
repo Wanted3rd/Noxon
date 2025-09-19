@@ -22,7 +22,7 @@ public:
 	UFUNCTION()
 	virtual void RightAction() = 0;
 	UFUNCTION()
-	virtual void RKeyAction() = 0;
+	virtual int RKeyAction(int inValue) = 0;
 };
 
 
@@ -36,7 +36,7 @@ public:
 
 	virtual void LeftAction() override {}
 	virtual void RightAction() override {}
-	virtual void RKeyAction() override {}
+	virtual int RKeyAction(int inValue) override { return 0; }
 
 protected:
 	virtual void BeginPlay() override;

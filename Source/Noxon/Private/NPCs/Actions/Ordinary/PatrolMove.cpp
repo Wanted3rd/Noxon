@@ -2,32 +2,17 @@
 
 
 #include "NPCs/Actions/Ordinary/PatrolMove.h"
+
+#include "AIController.h"
 #include "NPCs/BaseNonPlayableCharacter.h"
+#include "NPCs/Components/ActionComponent.h"
 #include "NPCs/Components/FSMComponent.h"
+#include "NPCs/Components/PerceptionComponent.h"
+#include "NPCs/Datas/StateEnums.h"
 
 void UPatrolMove::OnBegin(ABaseNonPlayableCharacter* owner)
 {
-	float zValue = owner->GetActorLocation().Z;
-	FHitResult hitResult;
-	FVector2D randPos = FVector2D::ZeroVector;
-	FVector start = FVector::ZeroVector;
-	FVector end = FVector::ZeroVector;
-	FVector groundLocation = FVector::ZeroVector;
-	FCollisionQueryParams QueryParams;
-	QueryParams.bTraceComplex = true;
-	while (FMath::Abs(zValue - owner->GetActorLocation().Z) > 600.f)
-	{
-		randPos = FMath::RandPointInCircle(600.f);
-		start = FVector(randPos.X, randPos.Y, 10000.0f); // 높은 곳에서 시작
-		end = FVector(randPos.X, randPos.Y, -10000.0f);  // 아래쪽으로
-		
-		if (GetWorld()->LineTraceSingleByChannel(hitResult, start, end, ECC_WorldStatic, QueryParams))
-		{
-			groundLocation = hitResult.Location;
-			zValue = groundLocation.Z;
-		}
-	}
-	owner->SetGoalLocation(groundLocation);
+	owner->GetActionComp()->RandPos();
 }
 
 void UPatrolMove::OnTick(ABaseNonPlayableCharacter* owner, float deltaTime)
@@ -36,9 +21,13 @@ void UPatrolMove::OnTick(ABaseNonPlayableCharacter* owner, float deltaTime)
 	owner->MoveBlockedBy(hitResult);
 	if (hitResult.ImpactPoint.Z > owner->GetActorLocation().Z + 60.f)
 	{
-		owner->GetFSMComponent()->ActivatePhase(EPhase::Idle);
+		owner->GetFSMComp()->ActivatePhaseState(EPhase::Idle);
 	}
-	owner->GetGoalLocation();
+	FVector goalLocation;
+	if (owner->GetActionComp()->GetGoalLocation(goalLocation))
+	{
+		owner->GetAIController()->MoveToLocation(goalLocation);
+	}
 }
 
 void UPatrolMove::OnEnd(ABaseNonPlayableCharacter* owner)

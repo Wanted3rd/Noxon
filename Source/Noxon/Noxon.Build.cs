@@ -12,7 +12,8 @@ public class Noxon : ModuleRules
 		{
 			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput",
 			"GameplayTags", "UMG",
-			"Json", "JsonUtilities"
+			"Json", "JsonUtilities",
+			"AIModule"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });

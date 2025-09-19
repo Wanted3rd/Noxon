@@ -21,9 +21,9 @@ struct FLODPropertiesForActivateNPC : public FTableRowBase
 	GENERATED_USTRUCT_BODY()
 public:
 	FLODPropertiesForActivateNPC()
-		: visibleDist(500.f)
-		, tickableDist(1000.f)
-		, updateTime(1.f)
+		: visibleDist(1000.f)
+		, tickableDist(2000.f)
+		, updateTime(0.5f)
 	{}
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=LOD)
@@ -61,6 +61,19 @@ enum class ENpcActivateType : uint8
 	End UMETA(Hidden)
 };
 
+
+// convert to Array or set in multiplay game 
+USTRUCT(BlueprintType)
+struct FProximityCheckContext
+{
+	GENERATED_USTRUCT_BODY()
+	
+	float dist = 0.f;
+	FVector direction = FVector::ZeroVector;
+	UPROPERTY()
+	APawn* target = nullptr;
+};
+
 /**
  * 
  */
@@ -69,13 +82,6 @@ class NOXON_API UNPCManager : public UActorComponent
 {
 	GENERATED_BODY()
 
-	// convert to Array or set in multiplay game 
-	struct FProximityCheckContext
-	{
-		float dist = 0.f;
-		FVector direction = FVector::ZeroVector;
-		APawn* target = nullptr;
-	};
 	
 public:
 	UNPCManager();

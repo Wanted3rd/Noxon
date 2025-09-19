@@ -29,10 +29,10 @@ protected:
 	FVector localVelocity;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	EPhase phase;
+	uint8 phase;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	EDamageState damagedState;
+	uint8 damagedState;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	EMoveState moveState;
+	uint8 moveState;
 	
 };

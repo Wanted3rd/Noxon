@@ -6,6 +6,8 @@
 #include "HandItem.h"
 #include "Gun.generated.h"
 
+class AAmmo;
+
 UCLASS()
 class NOXON_API AGun : public AHandItem
 {
@@ -20,16 +22,15 @@ protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	int maxAmmoCapacity;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	int currentAmmo;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float reloadTime;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float fireRate;
+
+	UPROPERTY()
+	float fireDelay;
+	float delayDeltaTime;
+	
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	bool bIsAutomatic; // 자동/단발여부
@@ -54,8 +55,9 @@ protected:
 	float footDmg;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	TObjectPtr<class USkeletalMeshComponent> gunMesh;
-
+	TObjectPtr<USkeletalMeshComponent> gunSKM;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UStaticMeshComponent> gunSM;
 	
 	//총알 관련 값
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -64,15 +66,19 @@ protected:
 	float bulletSpread; //탄 퍼짐 정도
 	float recoil;
 	
-
+	UPROPERTY()
+	TArray<AAmmo*> ammoPool;
+	UPROPERTY()
+	TArray<AAmmo*> reloadingPool;
+	TSubclassOf<AAmmo> ammoFactory;
 	
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// virtual void LeftAction() override {}
-	// virtual void RightAction() override {}
-	// virtual void RKeyAction() override {}
+	virtual void LeftAction() override;
+	virtual void RightAction() override;
+	virtual int RKeyAction(int inValue) override;
 	
 		
 };

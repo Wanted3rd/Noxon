@@ -39,6 +39,8 @@ struct FItemProperty
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	bool bMagazine = false;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	int maxMagazine = 0;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int magazine = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
