@@ -15,9 +15,6 @@
 class UNPCManager;
 class ABaseNonPlayableCharacter;
 
-/**
- * 
- */
 UCLASS()
 class NOXON_API AIngameGameMode : public AGameModeBase
 {
@@ -31,8 +28,11 @@ protected:
 	
 public:
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
-	void RegisterNpc(ABaseNonPlayableCharacter* npc);
-	void UnregisterNpc(ABaseNonPlayableCharacter* npc);
+	void RegisterNpc(ABaseNonPlayableCharacter* npc) const;
+	void UnregisterNpc(ABaseNonPlayableCharacter* npc) const;
+
+	UFUNCTION(BlueprintPure)
+	int32 GetEnemyCount() const;
 
 protected:
 	UPROPERTY()

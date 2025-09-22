@@ -17,12 +17,14 @@ AEnemy::AEnemy()
 	PrimaryActorTick.bCanEverTick = false;
 	relationship = ERelationship::Hostile;
 	
-	USkeletalMesh* mesh = BASE_SKM;
-	if (IsValid(mesh))
+	if (USkeletalMesh* mesh = FinderHelper::FindAssetFromConstructor<USkeletalMesh>("/Game/Assets/RustAsset/Hazmet/source/Hazmet.Hazmet"))
 	{
 		GetMesh()->SetSkeletalMeshAsset(mesh);
-		GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -90.f));
-		GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
+		
+		if (TSubclassOf<UAnimInstance> animInstanceClass = FinderHelper::GetClassFromConstructor<UAnimInstance>("/Game/Animation/AnimInstance"))
+		{
+			GetMesh()->SetAnimInstanceClass(animInstanceClass);
+		}
 	}
 	
 	fsmComponent = CreateDefaultSubobject<UFSMComponent>(TEXT("FSM"));

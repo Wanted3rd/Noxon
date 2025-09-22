@@ -71,9 +71,6 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<AAIController> aiController;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Anim", meta=(AllowPrivateAccess=true))
-	TSubclassOf<UAnimInstance> animFactory;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Components", meta=(AllowPrivateAccess=true))
 	TObjectPtr<UFSMComponent> fsmComponent;

@@ -111,6 +111,9 @@ public:
 	UFUNCTION(CallInEditor)
 	void PushNPCsTransformsForWorld();
 
+	UFUNCTION(BlueprintCallable)
+	int GetEnemyCount() {return npcContainer.Num();}
+
 protected:
 	UFUNCTION()
 	void ProcessNPCsBatch();

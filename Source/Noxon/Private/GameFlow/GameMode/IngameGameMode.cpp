@@ -24,18 +24,24 @@ void AIngameGameMode::InitGame(const FString& MapName, const FString& Options, F
 	
 }
 
-void AIngameGameMode::RegisterNpc(ABaseNonPlayableCharacter* npc)
+void AIngameGameMode::RegisterNpc(ABaseNonPlayableCharacter* npc) const
 {
 	npcManager->RegisterNPC(npc);
 }
 
-void AIngameGameMode::UnregisterNpc(ABaseNonPlayableCharacter* npc)
+void AIngameGameMode::UnregisterNpc(ABaseNonPlayableCharacter* npc) const
 {
 	npcManager->DestroyNPC(npc);
+}
+
+int32 AIngameGameMode::GetEnemyCount() const
+{
+	return npcManager->GetEnemyCount();
 }
 
 void AIngameGameMode::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	GetGameState<AIngameGameState>();
 }

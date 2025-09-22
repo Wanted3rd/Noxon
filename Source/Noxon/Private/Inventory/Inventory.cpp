@@ -727,8 +727,8 @@ AHandItem* UInventory::SelectHotbarSlot(int32 Hotkey)
     const FItemKey Key = Slots[SlotIndex].Key;
 
     // 핸드 가능하면 풀에서 꺼내 포인터 반환(없으면 null)
-    UGameInstance* GI = IsValid(GetWorld()) ? GetWorld()->GetGameInstance() : nullptr;
-    UItemDBSubsystem* DB = IsValid(GI) ? GI->GetSubsystem<UItemDBSubsystem>() : nullptr;
+    UGameInstance* gi = IsValid(GetWorld()) ? GetWorld()->GetGameInstance() : nullptr;
+    UItemDBSubsystem* DB = IsValid(gi) ? gi->GetSubsystem<UItemDBSubsystem>() : nullptr;
     // 전환 정책: 기존 장착 해제
     ReleaseAllInUseHandItems();
     if (!DB) { return nullptr; }
