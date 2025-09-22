@@ -2,11 +2,11 @@
 
 
 #include "GameFlow/GameMode/IngameGameMode.h"
+#include "GameFlow/GameMode/IngameGameState.h"
+#include "NPCs/Manager/NPCManager.h"
 
 #include "Player/MainPlayer.h"
 
-#include "NPCs/Manager/EnemyManager.h"
-#include "NPCs/Manager/NeutralManager.h"
 
 AIngameGameMode::AIngameGameMode()
 {
@@ -15,10 +15,23 @@ AIngameGameMode::AIngameGameMode()
 	{
 		DefaultPawnClass = tempPlayer.Class;
 	}
+	GameStateClass = AIngameGameState::StaticClass();
+}
+
+void AIngameGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
+{
+	Super::InitGame(MapName, Options, ErrorMessage);
 	
-	EnemyManager = CreateDefaultSubobject<UEnemyManager>("EnemyManager");
-	NeutralManager = CreateDefaultSubobject<UNeutralManager>("NeutralManager");
-	
+}
+
+void AIngameGameMode::RegisterNpc(ABaseNonPlayableCharacter* npc)
+{
+	npcManager->RegisterNPC(npc);
+}
+
+void AIngameGameMode::UnregisterNpc(ABaseNonPlayableCharacter* npc)
+{
+	npcManager->DestroyNPC(npc);
 }
 
 void AIngameGameMode::BeginPlay()

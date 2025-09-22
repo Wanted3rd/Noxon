@@ -1,34 +1,68 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "NPCs/BaseNonPlayableCharacter.h"
 
+#include "Animations/NPCAnimInstance.h"
+#include "GameFlow/GameMode/IngameGameMode.h"
+#include "NPCs/Actions/StateAction.h"
+#include "NPCs/Components/ActionComponent.h"
+#include "NPCs/Components/FSMComponent.h"
+#include "NPcs/Datas/StateEnums.h"
+#include "NPCs/Components/PerceptionComponent.h"
+#include "NPCs/Manager/NPCManager.h"
 #include "Utility/FindHelper.h"
+#include "AIController.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 
-// Sets default values
 ABaseNonPlayableCharacter::ABaseNonPlayableCharacter()
 {
-	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
-	animFactory = FinderHelper::GetClassFromConstructor<UAnimInstance>(TEXT("/Game/Assets/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed_C"));
+	PrimaryActorTick.bCanEverTick = false;
+	animFactory = FinderHelper::GetClassFromConstructor<UNPCAnimInstance>(TEXT("/Game/NPCs/ABP_NPC_C"));
 	if (animFactory != nullptr)
 	{
 		GetMesh()->SetAnimInstanceClass(animFactory);
 	}
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
-// Called when the game starts or when spawned
 void ABaseNonPlayableCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	
+	initTransform = GetActorTransform();
+	aiController = Cast<AAIController>(GetController());
+	curHp = maxHp;
 }
 
-// Called every frame
-void ABaseNonPlayableCharacter::Tick(float DeltaTime)
+void ABaseNonPlayableCharacter::DeadNPC()
 {
-	Super::Tick(DeltaTime);
+	if (deadTimer.IsValid())
+	{
+		return;
+	}
+	GetActionComp()->ResetActions();
+	GetPerceptionComp()->ResetPerception();
+	
+	// choice drop item here.
+	if (GetWorld()->GetAuthGameMode<AIngameGameMode>())
+	{
+		GetWorld()->GetTimerManager().SetTimer(deadTimer, [&]()->void
+	   {
+		   // Spawn drop item here.
+		   GetWorld()->GetAuthGameMode<AIngameGameMode>()->UnregisterNpc(this);
+		   Destroy();
+	   }, 2.f, false);
+	}
+}
+
+AAIController* ABaseNonPlayableCharacter::GetAIController()
+{
+	return IsValid(aiController) ? aiController : nullptr;
+}
+
+void ABaseNonPlayableCharacter::EnableComponentTick(bool bActive)
+{
+	fsmComponent->SetComponentTickEnabled(bActive);
+	perceptionComponent->SetComponentTickEnabled(bActive);
+	actionComponent->SetComponentTickEnabled(bActive);
 }
 

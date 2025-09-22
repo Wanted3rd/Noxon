@@ -17,13 +17,13 @@ bool UStatusComponent::RegStatus(FName Name, float Max, float Current, bool bAct
 {
 	// Check has already exist
 	// UE_LOG(LogTemp, Warning, TEXT("Already Exist Status"));
-	if (!StatusMap.Contains(Name))
-	{
-		Current < 0 ?
-		StatusMap.Add(Name, FStatus(Max, Max, bActive)) :
-		StatusMap.Add(Name, FStatus(Max, Current, bActive));
-		return true;
-	}
+    if (!StatusMap.Contains(Name))
+    {
+        Current < 0 ?
+        StatusMap.Add(Name, FStatus{Max, Max, bActive}) :
+        StatusMap.Add(Name, FStatus{Max, Current, bActive});
+        return true;
+    }
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("Registering Status Error"));

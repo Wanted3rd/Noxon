@@ -4,10 +4,11 @@
 #include "GameFramework/Actor.h"
 #include "BaseItem.generated.h"
 
+
 USTRUCT(BlueprintType)
 struct FItemProperty
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UTexture2D> icon = nullptr;
@@ -23,6 +24,10 @@ struct FItemProperty
 	bool bQuantity = false;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int maxQuantity = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	bool isHandable = false;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int quantity = 0;
 	// 내구도
@@ -33,6 +38,8 @@ struct FItemProperty
 	// 총알
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	bool bMagazine = false;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	int maxMagazine = 0;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int magazine = 0;
 

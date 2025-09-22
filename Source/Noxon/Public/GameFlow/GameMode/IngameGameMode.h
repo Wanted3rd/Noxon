@@ -12,8 +12,8 @@
  */
 #define GM_INGAME Cast<AIngameGameMode>(UGameplayStatics::GetGameMode(GetWorld()))
 
-class UEnemyManager;
-class UNeutralManager;
+class UNPCManager;
+class ABaseNonPlayableCharacter;
 
 /**
  * 
@@ -26,19 +26,15 @@ class NOXON_API AIngameGameMode : public AGameModeBase
 public:
 	AIngameGameMode();
 
-
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE UEnemyManager* GetEnemyManager() const {return EnemyManager;}
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE UNeutralManager* GetNeutralManager() const {return NeutralManager;}
-
 protected:
 	virtual void BeginPlay() override;
+	
+public:
+	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
+	void RegisterNpc(ABaseNonPlayableCharacter* npc);
+	void UnregisterNpc(ABaseNonPlayableCharacter* npc);
 
 protected:
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UEnemyManager> EnemyManager;
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UNeutralManager> NeutralManager;
-	
+	UPROPERTY()
+	TObjectPtr<UNPCManager> npcManager;
 };

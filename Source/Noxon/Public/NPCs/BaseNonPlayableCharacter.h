@@ -6,14 +6,20 @@
 #include "GameFramework/Character.h"
 #include "BaseNonPlayableCharacter.generated.h"
 
-UENUM(BlueprintType, meta=(Bitmask))
+class UFSMComponent;
+class UPerceptionComponent;
+class UActionComponent;
+class AHandItem;
+class AAIController;
+
+UENUM(BlueprintType)
 enum class ERelationship : uint8
 {
-	Default = 0 << 0 UMETA(Hidden),
-	Hostile = 1 << 0,
-	Neutral = 1 << 1,
-	Friendly = 1 << 2,
-	End = 1 << 3 UMETA(Hidden)
+	Default = 0 UMETA(Hidden),
+	Neutral = 1,
+	Hostile = 2,
+	Friendly = 3,
+	End = 4 UMETA(Hidden)
 };
 
 UCLASS()
@@ -24,27 +30,66 @@ class NOXON_API ABaseNonPlayableCharacter : public ACharacter
 public:
 	ABaseNonPlayableCharacter();
 
-	virtual void Tick(float DeltaTime) override;
-
-#pragma region Target
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE AActor* GetTargetActor() {return targetActor;}
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE void SetTargetActor(AActor* inTarget) {targetActor = inTarget;}
-
-#pragma endregion Target
-	
 protected:
 	virtual void BeginPlay() override;
 
 public:
-	ERelationship relationship = ERelationship::Hostile;
+	UFUNCTION(BlueprintCallable)
+	void DeadNPC();
+	UFUNCTION(BlueprintPure)
+	FORCEINLINE bool IsDead() const {return deadTimer.IsValid();}
+
+	UFUNCTION(BlueprintPure)
+	AAIController* GetAIController();
+	UFUNCTION()
+	void EnableComponentTick(bool bActive);
+	
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE UFSMComponent* GetFSMComp() {return fsmComponent;}
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE UPerceptionComponent* GetPerceptionComp() {return perceptionComponent;}
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE UActionComponent* GetActionComp() {return actionComponent;}
+
+	UFUNCTION(BlueprintPure)
+	FORCEINLINE FTransform GetInitTransform() const {return initTransform;}
+
+	UFUNCTION()
+	AHandItem* GetHandItem() {return handItem;}
+	UFUNCTION()
+	void EquipHandItem(AHandItem* inHandItem) { handItem = inHandItem; }
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE void Damage(float inDamage) {curHp -= inDamage;}
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetHp() {return curHp;}
+
+public:
+	ERelationship relationship = ERelationship::Default;
 
 protected:
+	FTimerHandle deadTimer;
+
+	UPROPERTY()
+	TObjectPtr<AAIController> aiController;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Anim", meta=(AllowPrivateAccess=true))
 	TSubclassOf<UAnimInstance> animFactory;
-	
-private:
+
+	UPROPERTY(EditDefaultsOnly, Category = "Components", meta=(AllowPrivateAccess=true))
+	TObjectPtr<UFSMComponent> fsmComponent;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Components", meta=(AllowPrivateAccess=true))
+	TObjectPtr<UPerceptionComponent> perceptionComponent;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Components", meta=(AllowPrivateAccess=true))
+	TObjectPtr<UActionComponent> actionComponent;
+	// convert to Status comp if we can
 	UPROPERTY()
-	TObjectPtr<AActor> targetActor = nullptr;
+	float maxHp = 5.f;
+	UPROPERTY()
+	float curHp;
+
+	UPROPERTY()
+	FTransform initTransform = FTransform();
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Item")
+	TObjectPtr<AHandItem> handItem = nullptr;
 };

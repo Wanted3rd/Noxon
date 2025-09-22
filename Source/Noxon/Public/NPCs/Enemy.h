@@ -6,6 +6,7 @@
 #include "BaseNonPlayableCharacter.h"
 #include "Enemy.generated.h"
 
+
 UCLASS()
 class NOXON_API AEnemy : public ABaseNonPlayableCharacter
 {
@@ -19,7 +20,6 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+protected:
+	// coord in worldMap (table, rand(0~row end) )
 };

@@ -14,5 +14,7 @@
 UCLASS()
 class NOXON_API UNoxonGameInstance : public UGameInstance
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
+public:
+    virtual void Init() override;
 };

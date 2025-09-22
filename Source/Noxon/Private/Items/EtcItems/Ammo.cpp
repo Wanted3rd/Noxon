@@ -3,6 +3,13 @@
 
 #include "Items/EtcItems/Ammo.h"
 
+#include "Components/SphereComponent.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/ProjectileMovementComponent.h"
+#include "NPCs/BaseNonPlayableCharacter.h"
+#include "NPCs/Components/FSMComponent.h"
+#include "NPcs/Datas/StateEnums.h"
+
 
 // Sets default values
 AAmmo::AAmmo()
@@ -20,14 +27,13 @@ AAmmo::AAmmo()
 	property.magazine = 30;
 	property.deal = 10.f;
 	property.heal = 0.f;
-	
 }
 
 // Called when the game starts or when spawned
 void AAmmo::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	collisionComp->OnComponentHit.AddDynamic(this, &AAmmo::OnHitSth);
 }
 
 // Called every frame
@@ -36,3 +42,79 @@ void AAmmo::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
+
+void AAmmo::SetActive(bool bActive)
+{
+	if (bActive)
+	{
+		bodyMesh->SetVisibility(true);
+		collisionComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		moveComp->Velocity = GetActorForwardVector() * moveComp->InitialSpeed;
+
+		GetWorldTimerManager().SetTimer(projectileTimerHandle, [&]()->void
+		{
+			SetActive(false);
+		}, destroyTime, false);
+	}
+	else
+	{
+		// Rendering
+		bodyMesh->SetVisibility(false);
+		// collision
+		collisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		
+	}
+}
+
+void AAmmo::OnHitSth(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	FVector NormalImpulse, const FHitResult& Hit)
+{
+	if (OtherActor->IsA(ACharacter::StaticClass()))
+	{
+		if (ABaseNonPlayableCharacter* npc = Cast<ABaseNonPlayableCharacter>(OtherActor))
+		{
+			npc->GetFSMComp()->ActivateDamagedState(EDamageState::SmallDamaged);
+			npc->Damage(1.f);
+		}
+	}
+	SetActive(false);
+}
+
+void AAmmo::PostEditChangeProperty(
+	FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	// speed 값이 수정이 됐는지 체크
+	if (PropertyChangedEvent.GetPropertyName() == TEXT("speed"))
+	{
+		moveComp->InitialSpeed = speed;
+		moveComp->MaxSpeed = speed;
+	}
+}
+
+
+// public: // components
+// UPROPERTY(VisibleAnywhere)
+// class USphereComponent* collisionComp;
+// UPROPERTY(VisibleAnywhere)
+// class UStaticMeshComponent* bodyMesh;
+// UPROPERTY(VisibleAnywhere)
+// class UProjectileMovementComponent* moveComp;
+//
+// // 일정시간이 흐르면 없애고 싶다.
+// UPROPERTY(EditAnywhere, Category=Settings)
+// float destroyTime = 2;
+// float currentTime = 0;
+//
+// UPROPERTY()
+// class AMainPlayer* player;
+// 	
+// // 활성화 세팅 함수
+// void SetActive(bool bActive);
+//
+// UPROPERTY(EditAnywhere)
+// float speed = 10000;
+//
+// // 에디터에서 속성을 수정했을 때, 다른 속성들도 수정할 수 있게 하고 싶다.
+// virtual  void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;	
