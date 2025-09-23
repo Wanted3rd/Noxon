@@ -1,6 +1,4 @@
-﻿// InventoryTypes.h
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
@@ -8,7 +6,6 @@
 #include "GameplayTagContainer.h"
 #include "InventoryType.generated.h"
 
-// 전방 선언: 헤더 경량화 및 컴파일 안정성
 class UTexture2D;
 class AHandItem;
 
@@ -41,7 +38,7 @@ struct FItemKey
 	{
 		return DefId  != NAME_None;
 	}
-};
+}; 
 
 /**
  * 정적 아이템 정의(아이템 DB의 캐시 단위)
