@@ -414,6 +414,16 @@ FTransform AMainPlayer::GetSocketTransform(FName SocketName) const
 	return FTransform::Identity;
 }
 
+FTransform AMainPlayer::GetSocketTransform(FName SocketName) const
+{
+	if (USkeletalMeshComponent* MeshComp = viewHandItemSKM)
+	{
+		if (MeshComp->DoesSocketExist(SocketName))
+			return MeshComp->GetSocketTransform(SocketName);
+	}
+	return FTransform::Identity;
+}
+
 
 
 
