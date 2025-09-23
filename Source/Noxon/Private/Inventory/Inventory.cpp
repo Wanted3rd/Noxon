@@ -106,8 +106,8 @@ bool UInventory::GetSlotView(int32 Index, FInventorySlotView& Out) const
 
     // DB 서브시스템이 있으면 정적 정의까지 포함해 빌드
     if (IsValid(p_DataBase))
-	{
-    	return (p_DataBase->BuildSlotView(Index, Slots[Index], Out));
+	  {
+    	  return (p_DataBase->BuildSlotView(Index, Slots[Index], Out));
     }
  
     // DB가 없어도 빈 슬롯은 UI에서 사각형으로 표시 가능하도록 true 반환
@@ -398,7 +398,6 @@ void UInventory::BuildHandInstancesPool()
     {
         return;
     }
-	
     if (!p_GameInstance)
     {
         return;
