@@ -1,27 +1,59 @@
 #include "Inventory/Inventory.h"
+
 #include "Inventory/ItemDBSubsystem.h"
 #include "Engine/World.h"
 #include "Engine/GameInstance.h"
+#include "Subsystems/GameInstanceSubsystem.h"
 #include "Engine/DataTable.h"
-#include "GameplayTagsManager.h"
-#include "Blueprint/UserWidget.h"
 #include "UObject/UnrealType.h"
 #include "Items/HandItems/HandItem.h"
-#include "UI/InventoryWidgetBase.h"
+#include "Items/HandItems/Ak47.h"
+
 
 UInventory::UInventory()
 {
-	// ActorComponent의 틱 설정 필드는 PrimaryComponentTick
 	PrimaryComponentTick.bCanEverTick = false;
+	
 }
 
-void UInventory::ConstructInventory()
+void UInventory::BeginPlay()
 {
-	OwnCtrl = CastChecked<APlayerController>(GetOwner());
+	Super::BeginPlay();
+
+	p_GameInstance = GetWorld()->GetGameInstance();
+	if (!IsValid(p_GameInstance))
+	{
+		UE_LOG(LogTemp, Error, TEXT("UInventory::BeginPlay: Game instance is invalid"));
+		return;
+	}
+	p_DataBase = p_GameInstance->GetSubsystem<UItemDBSubsystem>();
+	if (!IsValid(p_DataBase))
+	{
+		UE_LOG(LogTemp, Error, TEXT("UInventory::BeginPlay: DB is invalid"));
+		return;
+	}
 	
-	InventoryMenu = CreateWidget<UInventoryWidgetBase>(OwnCtrl.Get(), InventoryMenuClass);
-	InventoryMenu->AddToViewport();
+	BuildHandInstancesPool();
+	FItemInstanceState tmp = FItemInstanceState(FGuid("AK47"));
+	AddItem(FItemKey(FName("AK47")), 1, tmp);
+	
 }
+
+void UInventory::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	for (auto& KVP : Instances)
+	{
+		if (IsValid(KVP.Value))
+		{
+			KVP.Value->Destroy();
+		}
+	}
+	Instances.Empty();
+	InUseHandItems.Empty();
+
+	Super::EndPlay(EndPlayReason);
+}
+
 
 void UInventory::InitializeSlots(int32 InRows, int32 InCols)
 {
@@ -30,27 +62,28 @@ void UInventory::InitializeSlots(int32 InRows, int32 InCols)
 
 	const int32 Count = NumRows * NumCols;
 	Slots.SetNum(Count);
-	for (int32 i=0; i<Count; ++i)
+	for (int32 i = 0; i < Count; ++i)
 	{
 		Slots[i].SlotIndex = i;
 		Slots[i].Clear();
 	}
 
-	// 인벤토리 열릴 때, 보유 키들 프리패치(아이콘 스트리밍) 하면 UX 좋아짐
-	if (UItemDBSubsystem* DB = GetWorld()->GetGameInstance()->GetSubsystem<UItemDBSubsystem>())
+	InsertTestItem();
+
+	// Prefetch known item keys so asset streaming happens before the inventory UI opens
+	if (IsValid(p_DataBase))
 	{
 		TArray<FItemKey> Keys;
 		GetAllKeys(Keys);
-		DB->Prefetch(Keys);
+		p_DataBase->Prefetch(Keys);
 	}
 
-	// 초기 전체 리프레시를 원하면 모든 인덱스 브로드캐스트
+	// Broadcast a full refresh so listeners rebuild every slot at initialization
 	TArray<int32> AllIndices;
 	AllIndices.Reserve(Count);
 	for (int32 i=0; i<Count; ++i) { AllIndices.Add(i); }
 	BroadcastChanged(AllIndices);
 }
-
 int32 UInventory::IndexFromRC(int32 Row, int32 Col) const
 {
 	if (Row < 0 || Col < 0 || Row >= NumRows || Col >= NumCols) return INDEX_NONE;
@@ -65,28 +98,35 @@ const FInventorySlot& UInventory::GetSlot(int32 Index) const
 
 bool UInventory::GetSlotView(int32 Index, FInventorySlotView& Out) const
 {
-    if (!IsValidIndex(Index)) return false;
+	if (!IsValidIndex(Index))
+	{
+		return false;
+	}
 
-    // 기본 뷰(빈 슬롯 표시용) 미리 채워둠
-    Out = FInventorySlotView{};
-    Out.SlotIndex = Index;
-    Out.Key = Slots[Index].Key;
-    Out.Quantity = Slots[Index].Quantity;
+	const FInventorySlot& Slot = Slots[Index];
 
-    // DB 서브시스템이 있으면 정적 정의까지 포함해 빌드
-    if (UGameInstance* GI = GetWorld()->GetGameInstance();
-    	IsValid(GI))
-    {
-        if (UItemDBSubsystem* DB = GI->GetSubsystem<UItemDBSubsystem>())
-        {
-            return DB->BuildSlotView(Index, Slots[Index], Out);
-        }
-    }
+	Out = FInventorySlotView{};
+	Out.SlotIndex = Index;
+	Out.Key = Slot.Key;
+	Out.Quantity = Slot.Quantity;
 
-    // DB가 없어도 빈 슬롯은 UI에서 사각형으로 표시 가능하도록 true 반환
-    return Slots[Index].IsEmpty();
+	if (IsValid(p_DataBase))
+	{
+		if (p_DataBase->BuildSlotView(Index, Slot, Out))
+		{
+			return true;
+		}
+	}
+
+	// Fall back to the cached test item so the inventory UI can render even without DB access.
+	if (TryBuildSlotViewFromTestItem(Slot, Out))
+	{
+		Out.SlotIndex = Index;
+		return true;
+	}
+
+	return Slot.IsEmpty();
 }
-
 void UInventory::GetAllKeys(TArray<FItemKey>& OutKeys) const
 {
 	OutKeys.Reset();
@@ -114,11 +154,10 @@ int32 UInventory::FindStackableSlot(const FItemKey& Key, int32& OutRemainingCapa
 	OutRemainingCapacity = 0;
 
 	// Key→정의 조회해서 MaxStackSize 확인
-	const UItemDBSubsystem* DB = GetWorld()->GetGameInstance()->GetSubsystem<UItemDBSubsystem>();
-	if (!DB) return INDEX_NONE;
+	if (!p_DataBase) return INDEX_NONE;
 
 	FItemStaticData Def;
-	if (!const_cast<UItemDBSubsystem*>(DB)->TryGetStaticData(Key, Def))
+	if (!p_DataBase->TryGetStaticData(Key, Def))
 	{
 		return INDEX_NONE;
 	}
@@ -200,10 +239,10 @@ FInventoryOpResult UInventory::AddItem(const FItemKey& Key, int32 Quantity, cons
 		int32 MaxPush = 1;
 
 		// 정의 참조(스택형이면 MaxStackSize 사용)
-		if (UItemDBSubsystem* DB = GetWorld()->GetGameInstance()->GetSubsystem<UItemDBSubsystem>())
+		if (IsValid(p_DataBase))
 		{
 			FItemStaticData Def;
-			if (DB->TryGetStaticData(Key, Def))
+			if (p_DataBase->TryGetStaticData(Key, Def))
 			{
 				MaxPush = Def.bStackable ? Def.MaxStackSize : 1;
 			}
@@ -262,10 +301,10 @@ FInventoryOpResult UInventory::MoveItem(int32 FromIndex, int32 ToIndex, int32 Qu
 		int32 MaxStackSize = 1;
 		bool bStackable = false;
 
-		if (UItemDBSubsystem* DB = GetWorld()->GetGameInstance()->GetSubsystem<UItemDBSubsystem>())
+		if (IsValid(p_DataBase))
 		{
 			FItemStaticData Def;
-			DB->TryGetStaticData(To.Key, Def);
+			p_DataBase->TryGetStaticData(To.Key, Def);
 			MaxStackSize = Def.MaxStackSize;
 			bStackable = Def.bStackable;
 		}
@@ -363,27 +402,77 @@ FInventoryOpResult UInventory::RemoveAt(int32 Index, int32 Quantity)
 	return FInventoryOpResult::Ok(Dirty);
 }
 
-void UInventory::BeginPlay()
+void UInventory::InsertTestItem()
 {
-    Super::BeginPlay();
-    BuildHandInstancesPool();
-}
-
-void UInventory::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-    for (auto& KVP : Instances)
+    // Guard: only seed when the first slot exists and is empty right after initialization so real gameplay data stays intact.
+    if (!Slots.IsValidIndex(0) || !Slots[0].IsEmpty())
     {
-        if (IsValid(KVP.Value))
-        {
-            KVP.Value->Destroy();
-        }
+        return;
     }
-    Instances.Empty();
-    InUseHandItems.Empty();
 
-    Super::EndPlay(EndPlayReason);
+    if (!IsValid(p_DataBase) || !IsValid(p_DataBase->ItemDataTable))
+    {
+        return;
+    }
+
+    UDataTable* ItemTable = p_DataBase->ItemDataTable;
+    if (!ItemTable || !ItemTable->RowStruct || !ItemTable->RowStruct->IsChildOf(FItemStaticData::StaticStruct()))
+    {
+        return;
+    }
+
+    static const FString Context(TEXT("Inventory::InsertTestItem"));
+    const TArray<FName> RowNames = ItemTable->GetRowNames();
+    if (RowNames.Num() == 0)
+    {
+        return;
+    }
+
+    const FName RowName = RowNames[0];
+    const FItemStaticData* Row = ItemTable->FindRow<FItemStaticData>(RowName, Context, /*bWarnIfMissing*/false);
+    if (!Row)
+    {
+        return;
+    }
+
+    InsertedTestItemDefId = RowName;
+
+    FInventorySlot& FirstSlot = Slots[0];
+    FirstSlot.Key.DefId = RowName;
+    FirstSlot.Quantity = 1;
+    FirstSlot.InstanceState = FItemInstanceState{};
+    FirstSlot.InstanceState.InstanceId = FGuid::NewGuid();
 }
 
+bool UInventory::TryBuildSlotViewFromTestItem(const FInventorySlot& Slot, FInventorySlotView& Out) const
+{
+    if (InsertedTestItemDefId.IsNone() || Slot.Key.DefId != InsertedTestItemDefId)
+    {
+        return false;
+    }
+
+    if (!IsValid(p_DataBase) || !IsValid(p_DataBase->ItemDataTable))
+    {
+        return false;
+    }
+
+    static const FString Context(TEXT("Inventory::TryBuildSlotViewFromTestItem"));
+    const FItemStaticData* Row = p_DataBase->ItemDataTable->FindRow<FItemStaticData>(InsertedTestItemDefId, Context, /*bWarnIfMissing*/false);
+    if (!Row)
+    {
+        return false;
+    }
+
+    Out.SlotIndex = Slot.SlotIndex;
+    Out.Key = Slot.Key;
+    Out.Quantity = Slot.Quantity;
+    Out.DisplayName = Row->DisplayName;
+    Out.MaxStackSize = Row->MaxStackSize;
+    Out.bStackable = Row->bStackable;
+    Out.Icon = Row->Icon;
+    Out.Durability = Slot.InstanceState.Durability;
+    return true;
+}
 void UInventory::BuildHandInstancesPool()
 {
     Instances.Empty();
@@ -393,20 +482,17 @@ void UInventory::BuildHandInstancesPool()
     {
         return;
     }
-
-    UGameInstance* GI = World->GetGameInstance();
-    if (!GI)
+    if (!p_GameInstance)
+    {
+        return;
+    }
+	
+    if (!p_DataBase || !p_DataBase->ItemDataTable)
     {
         return;
     }
 
-    UItemDBSubsystem* DB = GI->GetSubsystem<UItemDBSubsystem>();
-    if (!DB || !DB->ItemDataTable)
-    {
-        return;
-    }
-
-    UDataTable* Table = DB->ItemDataTable;
+    UDataTable* Table = p_DataBase->ItemDataTable;
     static const FString Ctx = TEXT("UInventory::BuildHandInstancesPool");
 
     const TArray<FName> RowNames = Table->GetRowNames();
@@ -506,17 +592,15 @@ AHandItem* UInventory::AcquireHandItemByDefId(FName DefId)
     // 없으면 스폰 시도(데이터테이블 기준)
     if (!Item)
     {
-        UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
-        UItemDBSubsystem* DB = GI ? GI->GetSubsystem<UItemDBSubsystem>() : nullptr;
-        if (DB && DB->ItemDataTable)
+        if (p_DataBase && p_DataBase->ItemDataTable)
         {
             static const FString Ctx = TEXT("UInventory::AcquireHandItemByDefId");
-            if (const FItemStaticData* Row = DB->ItemDataTable->FindRow<FItemStaticData>(DefId, Ctx, /*bWarnIfMissing*/true))
+            if (const FItemStaticData* Row = p_DataBase->ItemDataTable->FindRow<FItemStaticData>(DefId, Ctx, /*bWarnIfMissing*/true))
             {
                 bool bHandable = Row->bIsHandable;
                 if (!bHandable)
                 {
-                    if (UScriptStruct* RowStruct = DB->ItemDataTable->RowStruct)
+                    if (UScriptStruct* RowStruct = p_DataBase->ItemDataTable->RowStruct)
                     {
                         if (FProperty* FoundProp = RowStruct->FindPropertyByName(TEXT("isHandable")))
                         {
@@ -619,16 +703,14 @@ FInventoryOpResult UInventory::UseItemAt(int32 SlotIndex)
     }
 
     const FItemKey Key = Slots[SlotIndex].Key;
-
-    UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
-    UItemDBSubsystem* DB = GI ? GI->GetSubsystem<UItemDBSubsystem>() : nullptr;
-    if (!DB)
+	
+    if (!p_DataBase)
     {
         return FInventoryOpResult::Fail(EInventoryOpError::SlotBlocked);
     }
 
     FItemStaticData Def;
-    if (!DB->TryGetStaticData(Key, Def))
+    if (!p_DataBase->TryGetStaticData(Key, Def))
     {
         return FInventoryOpResult::Fail(EInventoryOpError::SlotBlocked);
     }
@@ -637,7 +719,7 @@ FInventoryOpResult UInventory::UseItemAt(int32 SlotIndex)
     bool bHandable = Def.bIsHandable;
     if (!bHandable)
     {
-        if (UScriptStruct* RowStruct = DB->ItemDataTable ? DB->ItemDataTable->RowStruct : nullptr)
+        if (UScriptStruct* RowStruct = p_DataBase->ItemDataTable ? p_DataBase->ItemDataTable->RowStruct : nullptr)
         {
             if (FProperty* FoundProp = RowStruct->FindPropertyByName(TEXT("isHandable")))
             {
@@ -663,16 +745,7 @@ FInventoryOpResult UInventory::UseItemAt(int32 SlotIndex)
     }
 
     // 2) 소비 가능 항목이면 1개 소모
-    bool bConsumable = false;
-    const FGameplayTag ConsumableTag = FGameplayTag::RequestGameplayTag(FName("Item.Consumable"), false);
-    if (ConsumableTag.IsValid() && Def.Tags.HasTag(ConsumableTag))
-    {
-        bConsumable = true;
-    }
-    else if (Def.bStackable)
-    {
-        bConsumable = true; // 태그가 없어도 스택형이면 기본적으로 소모 가능 처리
-    }
+    bool bConsumable = Def.bStackable; // 태그 제거: 스택 가능 아이템은 기본적으로 소비 가능으로 간주
 
     if (bConsumable)
     {
@@ -725,16 +798,13 @@ AHandItem* UInventory::SelectHotbarSlot(int32 Hotkey)
     }
 
     const FItemKey Key = Slots[SlotIndex].Key;
-
-    // 핸드 가능하면 풀에서 꺼내 포인터 반환(없으면 null)
-    UGameInstance* GI = IsValid(GetWorld()) ? GetWorld()->GetGameInstance() : nullptr;
-    UItemDBSubsystem* DB = IsValid(GI) ? GI->GetSubsystem<UItemDBSubsystem>() : nullptr;
+	
     // 전환 정책: 기존 장착 해제
     ReleaseAllInUseHandItems();
-    if (!DB) { return nullptr; }
+    if (!p_DataBase) { return nullptr; }
 
     FItemStaticData Def;
-    if (!DB->TryGetStaticData(Key, Def))
+    if (!p_DataBase->TryGetStaticData(Key, Def))
     {
         return nullptr;
     }
@@ -742,7 +812,7 @@ AHandItem* UInventory::SelectHotbarSlot(int32 Hotkey)
     bool bHandable = Def.bIsHandable;
     if (!bHandable)
     {
-        if (UScriptStruct* RowStruct = DB->ItemDataTable ? DB->ItemDataTable->RowStruct : nullptr)
+        if (UScriptStruct* RowStruct = p_DataBase->ItemDataTable ? p_DataBase->ItemDataTable->RowStruct : nullptr)
         {
             if (FProperty* FoundProp = RowStruct->FindPropertyByName(TEXT("isHandable")))
             {
@@ -758,3 +828,4 @@ AHandItem* UInventory::SelectHotbarSlot(int32 Hotkey)
 
     return AcquireHandItemByDefId(Key.DefId);
 }
+

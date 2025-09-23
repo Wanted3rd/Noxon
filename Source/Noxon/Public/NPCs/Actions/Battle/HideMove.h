@@ -13,4 +13,9 @@ UCLASS()
 class NOXON_API UHideMove : public UStateAction
 {
 	GENERATED_BODY()
+public:
+	virtual void OnBegin(ABaseNonPlayableCharacter* owner) override;
+	virtual void OnTick(ABaseNonPlayableCharacter* owner, float deltaTime) override;
+	virtual void OnEnd(ABaseNonPlayableCharacter* owner) override;
+
 };

@@ -39,6 +39,8 @@ struct FItemProperty
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	bool bMagazine = false;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	int maxMagazine = 0;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int magazine = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -47,7 +49,7 @@ struct FItemProperty
 	float heal = 0.f;
 };
 
-UCLASS()
+UCLASS(BlueprintType)
 class NOXON_API ABaseItem : public AActor
 {
 	GENERATED_BODY()
@@ -57,6 +59,8 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	const FItemProperty& GetItemProperty() const {return property;}
+
+	void RegisterStaticData();
 
 protected:
 	virtual void BeginPlay() override;

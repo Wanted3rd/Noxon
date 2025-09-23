@@ -3,8 +3,10 @@
 
 #include "NPCs/Actions/Damaged/DeadlyDamaged.h"
 #include "NPCs/BaseNonPlayableCharacter.h"
+#include "NPCs/Components/ActionComponent.h"
 #include "NPCs/Manager/NPCManager.h"
 #include "NPCs/Components/FSMComponent.h"
+#include "NPCs/Datas/StateEnums.h"
 #include "Utility/FindHelper.h"
 
 UDeadlyDamaged::UDeadlyDamaged()
@@ -14,12 +16,12 @@ UDeadlyDamaged::UDeadlyDamaged()
 
 void UDeadlyDamaged::OnBegin(ABaseNonPlayableCharacter* owner)
 {
-	owner->GetFSMComponent()->DeactivatePhase(
+	owner->GetFSMComp()->DeactivatePhaseState(
 		EPhase::OrdinaryPhase | EPhase::BattlePhase | EPhase::InteractPhase,
 		999.f
 	);
-	owner->SetPhaseAction(nullptr);
-	owner->SetMoveAction(nullptr);
+	owner->GetActionComp()->SetPhaseAction(nullptr);
+	owner->GetActionComp()->SetMoveAction(nullptr);
 	if (IsValid(deadMontage))
 	{
 		owner->PlayAnimMontage(deadMontage);
@@ -30,7 +32,7 @@ void UDeadlyDamaged::OnTick(ABaseNonPlayableCharacter* owner, float deltaTime)
 {
 	if (owner->GetMesh()->GetAnimInstance()->Montage_GetCurrentSection() == deadMontageEndSectionName)
 	{
-		owner->SetDamagedAction(nullptr);
+		owner->GetActionComp()->SetDamagedAction(nullptr);
 	}
 }
 

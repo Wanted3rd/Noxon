@@ -3,13 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Actions/StateAction.h"
 #include "GameFramework/Character.h"
 #include "BaseNonPlayableCharacter.generated.h"
 
-class UStateAction;
 class UFSMComponent;
+class UPerceptionComponent;
+class UActionComponent;
 class AHandItem;
+class AAIController;
 
 UENUM(BlueprintType)
 enum class ERelationship : uint8
@@ -21,20 +22,6 @@ enum class ERelationship : uint8
 	End = 4 UMETA(Hidden)
 };
 
-USTRUCT(BlueprintType)
-struct FPerceptionProperties
-{
-	GENERATED_USTRUCT_BODY()
-	
-	UPROPERTY()
-	float noticeRange = 1000.f;
-	UPROPERTY()
-	float meleeAttackRange = 200.f;
-	UPROPERTY()
-	float gunFireRange = 600.f;
-};
-
-
 UCLASS()
 class NOXON_API ABaseNonPlayableCharacter : public ACharacter
 {
@@ -43,75 +30,66 @@ class NOXON_API ABaseNonPlayableCharacter : public ACharacter
 public:
 	ABaseNonPlayableCharacter();
 
-	virtual void Tick(float DeltaTime) override;
-
-	UFUNCTION(BlueprintCallable)
-	void DeadNPC();
-
-	
-#pragma region Target
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE APawn* GetTargetPawn() {return targetPawn;}
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE void SetTargetPawn(APawn* inTarget) {targetPawn = inTarget;}
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE FVector GetGoalLocation() {return goalLocation;}
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE void SetGoalLocation(FVector inLocation) {goalLocation = inLocation;}
-#pragma endregion Target
-	
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE UFSMComponent* GetFSMComponent() {return fsmComponent;}
-
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE FPerceptionProperties GetPerceptionProperties() {return perceptionProperties;}
-
-	FORCEINLINE void SetPhaseAction(const TObjectPtr<UStateAction>& inAction) {currentPhaseAction = inAction;}
-	FORCEINLINE void SetMoveAction(const TObjectPtr<UStateAction>& inAction) {currentMoveAction = inAction;}
-	FORCEINLINE void SetDamagedAction(const TObjectPtr<UStateAction>& inAction) {currentDamagedAction = inAction;}
-	
 protected:
 	virtual void BeginPlay() override;
 
-	void PhaseTick(float deltaTime);
-	void MoveTick(float deltaTime);
-	void DamagedTick(float deltaTime);
+public:
+	UFUNCTION(BlueprintCallable)
+	void DeadNPC();
+	UFUNCTION(BlueprintPure)
+	FORCEINLINE bool IsDead() const {return deadTimer.IsValid();}
+
+	UFUNCTION(BlueprintPure)
+	AAIController* GetAIController();
+	UFUNCTION()
+	void EnableComponentTick(bool bActive);
+	
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE UFSMComponent* GetFSMComp() {return fsmComponent;}
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE UPerceptionComponent* GetPerceptionComp() {return perceptionComponent;}
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE UActionComponent* GetActionComp() {return actionComponent;}
+
+	UFUNCTION(BlueprintPure)
+	FORCEINLINE FTransform GetInitTransform() const {return initTransform;}
+
+	UFUNCTION()
+	AHandItem* GetHandItem() {return handItem;}
+	UFUNCTION()
+	void EquipHandItem(AHandItem* inHandItem) { handItem = inHandItem; }
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE void Damage(float inDamage) {curHp -= inDamage;}
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetHp() {return curHp;}
 
 public:
 	ERelationship relationship = ERelationship::Default;
 
 protected:
 	FTimerHandle deadTimer;
+
+	UPROPERTY()
+	TObjectPtr<AAIController> aiController;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Anim", meta=(AllowPrivateAccess=true))
 	TSubclassOf<UAnimInstance> animFactory;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Components")
+	UPROPERTY(EditDefaultsOnly, Category = "Components", meta=(AllowPrivateAccess=true))
 	TObjectPtr<UFSMComponent> fsmComponent;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Components", meta=(AllowPrivateAccess=true))
+	TObjectPtr<UPerceptionComponent> perceptionComponent;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Components", meta=(AllowPrivateAccess=true))
+	TObjectPtr<UActionComponent> actionComponent;
+	// convert to Status comp if we can
+	UPROPERTY()
+	float maxHp = 5.f;
+	UPROPERTY()
+	float curHp;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Action|Current")
-	TObjectPtr<UStateAction> currentPhaseAction = nullptr;
-	UPROPERTY(EditDefaultsOnly, Category = "Action|Current")
-	TObjectPtr<UStateAction> currentMoveAction = nullptr;
-	UPROPERTY(EditDefaultsOnly, Category = "Action|Current")
-	TObjectPtr<UStateAction> currentDamagedAction = nullptr;
+	UPROPERTY()
+	FTransform initTransform = FTransform();
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Action|Prev")
-	TObjectPtr<UStateAction> prevPhaseAction = nullptr;
-	UPROPERTY(EditDefaultsOnly, Category = "Action|Prev")
-	TObjectPtr<UStateAction> prevMoveAction = nullptr;
-	UPROPERTY(EditDefaultsOnly, Category = "Action|Prev")
-	TObjectPtr<UStateAction> prevDamagedAction = nullptr;
-
-	UPROPERTY()
-	TObjectPtr<APawn> targetPawn = nullptr;
-
-	UPROPERTY()
-	FVector goalLocation = FVector::ZeroVector;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Perception", meta=(AllowPrivateAccess=true))
-	FPerceptionProperties perceptionProperties = FPerceptionProperties();
-
 	UPROPERTY(EditDefaultsOnly, Category = "Item")
 	TObjectPtr<AHandItem> handItem = nullptr;
 };

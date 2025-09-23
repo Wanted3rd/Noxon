@@ -3,7 +3,12 @@
 
 #include "Items/EtcItems/Ammo.h"
 
+#include "Components/SphereComponent.h"
+#include "GameFramework/Character.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "NPCs/BaseNonPlayableCharacter.h"
+#include "NPCs/Components/FSMComponent.h"
+#include "NPcs/Datas/StateEnums.h"
 
 
 // Sets default values
@@ -22,14 +27,13 @@ AAmmo::AAmmo()
 	property.magazine = 30;
 	property.deal = 10.f;
 	property.heal = 0.f;
-	
 }
 
 // Called when the game starts or when spawned
 void AAmmo::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	collisionComp->OnComponentHit.AddDynamic(this, &AAmmo::OnHitSth);
 }
 
 // Called every frame
@@ -41,10 +45,43 @@ void AAmmo::Tick(float DeltaTime)
 
 void AAmmo::SetActive(bool bActive)
 {
+	if (bActive)
+	{
+		bodyMesh->SetVisibility(true);
+		collisionComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		moveComp->Velocity = GetActorForwardVector() * moveComp->InitialSpeed;
+
+		GetWorldTimerManager().SetTimer(projectileTimerHandle, [&]()->void
+		{
+			SetActive(false);
+		}, destroyTime, false);
+	}
+	else
+	{
+		// Rendering
+		bodyMesh->SetVisibility(false);
+		// collision
+		collisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		
+	}
+}
+
+void AAmmo::OnHitSth(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	FVector NormalImpulse, const FHitResult& Hit)
+{
+	if (OtherActor->IsA(ACharacter::StaticClass()))
+	{
+		if (ABaseNonPlayableCharacter* npc = Cast<ABaseNonPlayableCharacter>(OtherActor))
+		{
+			npc->GetFSMComp()->ActivateDamagedState(EDamageState::SmallDamaged);
+			npc->Damage(1.f);
+		}
+	}
+	SetActive(false);
 }
 
 void AAmmo::PostEditChangeProperty(
-	struct FPropertyChangedEvent& PropertyChangedEvent)
+	FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
