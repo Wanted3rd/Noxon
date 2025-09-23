@@ -2,12 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-
-class AHandItem;
+#include "Inv_Control.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEquippedHandItemChanged, AHandItem*, HandItem);
 
-#include "Inv_Control.generated.h"
 
 class UInventory;
 class UInventoryWidgetBase;
@@ -58,7 +56,7 @@ private:
 	void BindInventoryDelegates();
 	void UnbindInventoryDelegates();
 	AHandItem* EquipHotbarSlot(int32 Hotkey);
-	void UpdateEquippedHandItem(AHandItem* NewItem);
+	void UpdateEquippedHandItem(class AHandItem* NewItem);
 
 
 public:

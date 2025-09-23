@@ -7,11 +7,8 @@
 #include "Engine/DataTable.h"
 #include "UObject/UnrealType.h"
 #include "Items/HandItems/HandItem.h"
-#include "Items/BaseItem.h"
 #include "Items/HandItems/Ak47.h"
 
-
-const FName UInventory::TestItemDefId(TEXT("BaseItem_Test"));
 
 UInventory::UInventory()
 {
@@ -71,7 +68,7 @@ void UInventory::InitializeSlots(int32 InRows, int32 InCols)
 		Slots[i].Clear();
 	}
 
-	SeedTestItemFromBaseItem();
+	InsertTestItem();
 
 	// Prefetch known item keys so asset streaming happens before the inventory UI opens
 	if (IsValid(p_DataBase))
@@ -121,8 +118,8 @@ bool UInventory::GetSlotView(int32 Index, FInventorySlotView& Out) const
 		}
 	}
 
-	// Fall back to BaseItem defaults so the seeded test entry can render without data-table support.
-	if (TryBuildSlotViewFromBaseItem(Slot, Out))
+	// Fall back to the cached test item so the inventory UI can render even without DB access.
+	if (TryBuildSlotViewFromTestItem(Slot, Out))
 	{
 		Out.SlotIndex = Index;
 		return true;
@@ -405,7 +402,7 @@ FInventoryOpResult UInventory::RemoveAt(int32 Index, int32 Quantity)
 	return FInventoryOpResult::Ok(Dirty);
 }
 
-void UInventory::SeedTestItemFromBaseItem()
+void UInventory::InsertTestItem()
 {
     // Guard: only seed when the first slot exists and is empty right after initialization so real gameplay data stays intact.
     if (!Slots.IsValidIndex(0) || !Slots[0].IsEmpty())
@@ -413,66 +410,67 @@ void UInventory::SeedTestItemFromBaseItem()
         return;
     }
 
-    const ABaseItem* DefaultItem = ABaseItem::StaticClass()->GetDefaultObject<ABaseItem>();
-    if (!DefaultItem)
+    if (!IsValid(p_DataBase) || !IsValid(p_DataBase->ItemDataTable))
     {
         return;
     }
 
-    // Mirror the BaseItem property bag into the slot so UI drag & drop tests have tangible data without external assets.
-    const FItemProperty& PropertyBag = DefaultItem->GetItemProperty();
+    UDataTable* ItemTable = p_DataBase->ItemDataTable;
+    if (!ItemTable || !ItemTable->RowStruct || !ItemTable->RowStruct->IsChildOf(FItemStaticData::StaticStruct()))
+    {
+        return;
+    }
+
+    static const FString Context(TEXT("Inventory::InsertTestItem"));
+    const TArray<FName> RowNames = ItemTable->GetRowNames();
+    if (RowNames.Num() == 0)
+    {
+        return;
+    }
+
+    const FName RowName = RowNames[0];
+    const FItemStaticData* Row = ItemTable->FindRow<FItemStaticData>(RowName, Context, /*bWarnIfMissing*/false);
+    if (!Row)
+    {
+        return;
+    }
+
+    InsertedTestItemDefId = RowName;
 
     FInventorySlot& FirstSlot = Slots[0];
-    FirstSlot.Key.DefId = TestItemDefId;
-
-    int32 EffectiveQuantity = 1;
-    if (PropertyBag.bQuantity)
-    {
-        const int32 SourceQuantity = PropertyBag.quantity > 0 ? PropertyBag.quantity : 1;
-        const int32 MaxQuantity = PropertyBag.maxQuantity > 0 ? PropertyBag.maxQuantity : SourceQuantity;
-        const int32 ClampedMax = MaxQuantity > 0 ? MaxQuantity : SourceQuantity;
-        EffectiveQuantity = FMath::Clamp(SourceQuantity, 1, ClampedMax > 0 ? ClampedMax : 1);
-    }
-    FirstSlot.Quantity = EffectiveQuantity;
-
+    FirstSlot.Key.DefId = RowName;
+    FirstSlot.Quantity = 1;
     FirstSlot.InstanceState = FItemInstanceState{};
     FirstSlot.InstanceState.InstanceId = FGuid::NewGuid();
-    if (PropertyBag.bDurability)
-    {
-        FirstSlot.InstanceState.Durability = static_cast<int32>(PropertyBag.durability);
-    }
 }
 
-bool UInventory::TryBuildSlotViewFromBaseItem(const FInventorySlot& Slot, FInventorySlotView& Out) const
+bool UInventory::TryBuildSlotViewFromTestItem(const FInventorySlot& Slot, FInventorySlotView& Out) const
 {
-    if (Slot.Key.DefId != TestItemDefId)
+    if (InsertedTestItemDefId.IsNone() || Slot.Key.DefId != InsertedTestItemDefId)
     {
         return false;
     }
 
-    const ABaseItem* DefaultItem = ABaseItem::StaticClass()->GetDefaultObject<ABaseItem>();
-    if (!DefaultItem)
+    if (!IsValid(p_DataBase) || !IsValid(p_DataBase->ItemDataTable))
     {
         return false;
     }
 
-    // Translate the BaseItem property bag into UI-friendly view data so widgets can render the seeded test slot.
-    const FItemProperty& PropertyBag = DefaultItem->GetItemProperty();
+    static const FString Context(TEXT("Inventory::TryBuildSlotViewFromTestItem"));
+    const FItemStaticData* Row = p_DataBase->ItemDataTable->FindRow<FItemStaticData>(InsertedTestItemDefId, Context, /*bWarnIfMissing*/false);
+    if (!Row)
+    {
+        return false;
+    }
 
     Out.SlotIndex = Slot.SlotIndex;
     Out.Key = Slot.Key;
     Out.Quantity = Slot.Quantity;
-    Out.DisplayName = PropertyBag.itemName.IsNone() ? FText::FromString(TEXT("BaseItem Test")) : FText::FromName(PropertyBag.itemName);
-    Out.MaxStackSize = (PropertyBag.bQuantity && PropertyBag.maxQuantity > 0) ? PropertyBag.maxQuantity : 1;
-    Out.bStackable = Out.MaxStackSize > 1;
-
-    if (PropertyBag.icon != nullptr)
-    {
-        Out.Icon = PropertyBag.icon;
-    }
-
-    Out.Durability = PropertyBag.bDurability ? static_cast<int32>(PropertyBag.durability) : Slot.InstanceState.Durability;
-
+    Out.DisplayName = Row->DisplayName;
+    Out.MaxStackSize = Row->MaxStackSize;
+    Out.bStackable = Row->bStackable;
+    Out.Icon = Row->Icon;
+    Out.Durability = Slot.InstanceState.Durability;
     return true;
 }
 void UInventory::BuildHandInstancesPool()
@@ -830,3 +828,4 @@ AHandItem* UInventory::SelectHotbarSlot(int32 Hotkey)
 
     return AcquireHandItemByDefId(Key.DefId);
 }
+

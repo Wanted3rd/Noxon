@@ -102,23 +102,19 @@ protected:
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
-    // 풀/라이프사이클
-    /**
-     * Seeds the first inventory slot with a BaseItem-derived test entry so drag & drop can be exercised.
-     * Skips execution if the first slot already contains data to avoid overwriting real gameplay state.
-     */
-    void SeedTestItemFromBaseItem();
+    // Test Item
+    void InsertTestItem();
 
     /**
-     * Builds a slot view from the BaseItem test payload when no data-table entry exists.
-     * @param Slot  Inventory slot that should contain the BaseItem test data.
+     * Builds a slot view for the inserted test item when the DB lookup fails.
+     * @param Slot  Inventory slot that should contain the test item data.
      * @param Out   Filled view structure consumed by inventory UI widgets.
-     * @return True if the slot matched the BaseItem test payload, false otherwise.
+     * @return True if the slot matched the inserted test item, false otherwise.
      */
-    bool TryBuildSlotViewFromBaseItem(const FInventorySlot& Slot, FInventorySlotView& Out) const;
+    bool TryBuildSlotViewFromTestItem(const FInventorySlot& Slot, FInventorySlotView& Out) const;
 
-    /** Hard-coded DefId used for the BaseItem-backed test slot. */
-    static const FName TestItemDefId;
+    /** Cached DefId of the inserted test item so we can rebuild the view without the DB. */
+    FName InsertedTestItemDefId = NAME_None;
     void BuildHandInstancesPool();
 
     void ReleaseAllInUseHandItems();
@@ -146,13 +142,4 @@ private:
 
     void BroadcastChanged(const TArray<int32>& DirtyIndices);
 };
-
-
-
-
-
-
-
-
-
 
