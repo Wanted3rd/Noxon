@@ -12,8 +12,8 @@
  */
 #define GM_INGAME Cast<AIngameGameMode>(UGameplayStatics::GetGameMode(GetWorld()))
 
-class UEnemyManager;
-class UNeutralManager;
+class UNPCManager;
+class ABaseNonPlayableCharacter;
 
 /**
  * 
@@ -28,6 +28,13 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-
 	
+public:
+	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
+	void RegisterNpc(ABaseNonPlayableCharacter* npc);
+	void UnregisterNpc(ABaseNonPlayableCharacter* npc);
+
+protected:
+	UPROPERTY()
+	TObjectPtr<UNPCManager> npcManager;
 };

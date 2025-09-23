@@ -78,6 +78,11 @@ void ARifleDefaultAmmo::SetActive(bool bActive)
 				SetActive(false);
 				player->bulletPool.Add(this);
 			}
+			else
+			{
+				SetActive(false);
+				
+			}
 		};
 
 		FTimerHandle handle;

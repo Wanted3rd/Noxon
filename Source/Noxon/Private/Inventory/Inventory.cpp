@@ -484,7 +484,6 @@ void UInventory::BuildHandInstancesPool()
     {
         return;
     }
-	
     if (!p_GameInstance)
     {
         return;

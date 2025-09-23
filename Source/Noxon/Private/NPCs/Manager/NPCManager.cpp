@@ -11,33 +11,23 @@
 #include "NPCs/Enemy.h"
 #include "NPCs/NeutralNPC.h"
 #include "NPCs/Actions/ActionsPaths.h"
+#include "NPCs/Components/ActionComponent.h"
 #include "NPCs/Components/FSMComponent.h"
+#include "NPCs/Components/PerceptionComponent.h"
+#include "NPCs/Datas/StateEnums.h"
 
 
-TStatId UNPCManager::GetStatId() const
+UNPCManager::UNPCManager()
 {
-	return TStatId();
-}
-
-bool UNPCManager::ShouldCreateSubsystem(UObject* Outer) const
-{
-	UWorld* world = Cast<UWorld>(Outer);
-	//AIngameGameMode* ingameGM = Cast<AIngameGameMode>(UGameplayStatics::GetGameMode(world));
-	//if (!IsValid(world) || !IsValid(ingameGM))
-	//{
-	//	return false;
-	//}
+	lodProperties = FLODPropertiesForActivateNPC();
 	
-	return Super::ShouldCreateSubsystem(Outer);
 }
 
-void UNPCManager::OnWorldBeginPlay(UWorld& InWorld)
+void UNPCManager::BeginPlay()
 {
 	CreateActions();
-	ownerWorld = InWorld.GetWorld();
-	lodProperties.tickableDist *= lodProperties.tickableDist;
-	lodProperties.visibleDist *= lodProperties.visibleDist;
-	Super::OnWorldBeginPlay(InWorld);
+	ownerWorld = GetWorld();
+	Super::BeginPlay();
 	PushNPCsTransformsForWorld();
 	
 	// this work is needed in main player class's begin play. for joining to started session.
@@ -47,19 +37,13 @@ void UNPCManager::OnWorldBeginPlay(UWorld& InWorld)
 	}
 }
 
-void UNPCManager::Tick(float DeltaTime)
+void UNPCManager::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-	Super::Tick(DeltaTime);
-	APawn* tempPlayer = playerContainer[0]->GetPawn();
-	for (ABaseNonPlayableCharacter* npc : activatedNpcContainer)
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	for (auto npc : activatedNpcContainer)
 	{
-		npc->SetPhaseAction(phaseActions[npc->GetFSMComponent()->GetCurrentPhase()]);
-		if (FVector::Dist(npc->GetActorLocation(), tempPlayer->GetActorLocation()) < 500.f)
-		{
-			if (npc->GetActorForwardVector().Dot((
-				tempPlayer->GetActorLocation() - npc->GetActorLocation()).GetSafeNormal()) < 0.3f)
-				npc->GetFSMComponent()->ActivateMoveState(EMoveState::Chase);
-		}
+		npc.Key->GetActionComp()->SetPhaseAction(phaseActions[npc.Key->GetFSMComp()->GetCurrentPhase()]);
+		npc.Key->GetPerceptionComp()->ReceiveContext(npc.Value);
 	}
 	if (batchDeltaTime > lodProperties.updateTime)
 	{
@@ -70,13 +54,13 @@ void UNPCManager::Tick(float DeltaTime)
 	batchDeltaTime += DeltaTime;
 }
 
-void UNPCManager::Deinitialize()
+void UNPCManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	ownerWorld = nullptr;
 	playerContainer.Empty(0);
 	npcContainer.Empty(0);
 	activatedNpcContainer.Empty(0);
-	Super::Deinitialize();
+	Super::EndPlay(EndPlayReason);
 }
 
 void UNPCManager::ProcessNPCsBatch()
@@ -86,6 +70,95 @@ void UNPCManager::ProcessNPCsBatch()
 		return;
 	}
 
+	for (ABaseNonPlayableCharacter* npc : npcContainer)
+	{
+		ForEachNPCsBatch(npc);
+	}
+}
+
+void UNPCManager::ForEachNPCsBatch(ABaseNonPlayableCharacter* npc)
+{
+	ENpcActivateType activeType = ENpcActivateType::Default;
+	float dist = 0.f;
+	APlayerController* pc = nullptr;
+	for (TSet<APlayerController*>::TConstIterator iter = playerContainer.CreateConstIterator(); iter; ++iter)
+	{
+		pc = *iter;
+		dist = FVector::Dist(pc->GetFocalLocation(), npc->GetActorLocation());
+		if (dist > lodProperties.tickableDist)
+		{
+			activeType = ENpcActivateType::Deactivated;
+		}
+		else if (dist > lodProperties.visibleDist)
+		{
+			activeType = ENpcActivateType::Tickable;
+		}
+		else
+		{
+			activeType = ENpcActivateType::Visible;
+			break;
+		}
+	}
+	switch (activeType)
+	{
+	case ENpcActivateType::Default:
+	case ENpcActivateType::End:
+		{
+			npc->SetActorEnableCollision(ECollisionEnabled::NoCollision);
+		}
+	case ENpcActivateType::Deactivated:
+		{
+			npc->SetActorHiddenInGame(true);
+			
+			if (activatedNpcContainer.Remove(npc))
+			{
+				npc->EnableComponentTick(false);
+			}
+		}
+		break;
+	case ENpcActivateType::Visible:
+		{
+			npc->SetActorHiddenInGame(false);
+		}
+	case ENpcActivateType::Tickable:
+		{
+			FProximityCheckContext& context = activatedNpcContainer.FindOrAdd(npc);
+			context.dist = dist;
+			context.direction = (npc->GetActorLocation() - pc->GetFocalLocation()).GetSafeNormal();
+			context.target = pc->GetPawn();
+			npc->EnableComponentTick(true);
+			/*if (activatedNpcContainer.Find(npc) == nullptr)
+			{
+			}*/
+		}
+		break;
+	}
+	
+}
+
+void UNPCManager::DestroyNPC(ABaseNonPlayableCharacter* npc)
+{
+	if (activatedNpcContainer.Contains(npc))
+	{
+		activatedNpcContainer.Remove(npc);
+	}
+	npcContainer.Remove(npc);
+}
+
+void UNPCManager::CreateActions()
+{
+	phaseActions.Add(EPhase::Idle, NewObject<UIdleAction>());
+	phaseActions.Add(EPhase::HipFire, NewObject<UHipFireAction>());
+	damagedActions.Add(EDamageState::SmallDamaged, NewObject<USmallDamaged>());
+	damagedActions.Add(EDamageState::Death, NewObject<UDeadlyDamaged>());
+	moveActions.Add(EMoveState::Stop, NewObject<UStopMove>());
+	moveActions.Add(EMoveState::Patrol, NewObject<UPatrolMove>());
+	moveActions.Add(EMoveState::Chase, NewObject<UChaseMove>());
+	
+}
+
+void UNPCManager::ParallelForNPCsBatch()
+{/*
 	//https://dev.epicgames.com/community/learning/tutorials/BdmJ/unreal-engine-multithreading-techniques
 	int32 range = npcContainer.Num() * playerContainer.Num();
 	TArray<FVector> playerPos;
@@ -120,14 +193,15 @@ void UNPCManager::ProcessNPCsBatch()
 	    [](int32 contextIndex, int32 NumContexts)
 	    {
 	    	FProximityCheckContext context = FProximityCheckContext();
-	    	context.index = contextIndex;
+	    	//context.index = contextIndex;
 		    return context;
 	    },
 		[visibleDistSquared, tickableDistSquared, npcPos, playerPos](FProximityCheckContext& Context, int32 NPCIndex)
 		{
-			if (!npcPos.IsValidIndex(Context.index))
+			/*if (!npcPos.IsValidIndex(Context.index))
 				return;
-			const FVector npcLocation = npcPos[Context.index];
+			#1#
+			const FVector npcLocation = npcPos[NPCIndex/*Context.index#1#];
 			ENpcActivateType activeType = ENpcActivateType::Default;
 			for (const FVector& PlayerLocation : playerPos)
 			{
@@ -146,11 +220,11 @@ void UNPCManager::ProcessNPCsBatch()
 
 			if (activeType > ENpcActivateType::Deactivated)
 			{
-				Context.activeType = activeType;
+				//Context.activeType = activeType;
 			}
 			else
 			{
-				Context.activeType = ENpcActivateType::Deactivated;
+				//Context.activeType = ENpcActivateType::Deactivated;
 			}
 		}		
 	);
@@ -164,7 +238,7 @@ void UNPCManager::ProcessNPCsBatch()
 			}
 			for (int32 i = 0; i < TaskContexts.Num(); ++i)
 			{
-				if (!npcContainer.IsValidIndex(i))
+				if (!npcContainer.Find(i))
 				{
 					return;
 				}
@@ -200,7 +274,8 @@ void UNPCManager::ProcessNPCsBatch()
 				}
 			}
 		}
-	);	
+	);
+*/
 }
 
 void UNPCManager::PullNPCsTransformsFromWorld()
@@ -230,17 +305,6 @@ void UNPCManager::PushNPCsTransformsForWorld()
 {
 	FNPCsTransform npcsTransform;
 	
-	
-}
-
-void UNPCManager::DestroyNPC(ABaseNonPlayableCharacter* npc)
-{
-	if (activatedNpcContainer.Contains(npc))
-	{
-		activatedNpcContainer.Remove(npc);
-	}
-	npcContainer.RemoveSingleSwap(npc, EAllowShrinking::Yes);
-	npc->Destroy();
 }
 
 void UNPCManager::SaveNPCsTransformToJson(const FNPCsTransform& NPCData)
@@ -332,19 +396,19 @@ void UNPCManager::SaveNPCsTransformToJson(const FNPCsTransform& NPCData)
 
 bool UNPCManager::LoadNPCsTransformFromJson(FNPCsTransform& output)
 {
-    FString fromJson;
-    if (!FFileHelper::LoadFileToString(fromJson, *npcsTransformsFilePath))
-    {
-        return false;
-    }
+	FString fromJson;
+	if (!FFileHelper::LoadFileToString(fromJson, *npcsTransformsFilePath))
+	{
+		return false;
+	}
 
-    TSharedPtr<FJsonObject> jsonObject;
-    TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(fromJson);
+	TSharedPtr<FJsonObject> jsonObject;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(fromJson);
 
-    if (!FJsonSerializer::Deserialize(Reader, jsonObject))
-    {
-        return false;
-    }
+	if (!FJsonSerializer::Deserialize(Reader, jsonObject))
+	{
+		return false;
+	}
 	
 	const TSharedPtr<FJsonObject> levelData = jsonObject->GetObjectField(ownerWorld->GetCurrentLevel()->GetPackage()->GetName());
 	if (!levelData.IsValid())
@@ -353,104 +417,92 @@ bool UNPCManager::LoadNPCsTransformFromJson(FNPCsTransform& output)
 	}
 
 
-    const TArray<TSharedPtr<FJsonValue>>* EnemiesArray;
-    if (levelData->TryGetArrayField(TEXT("enemiesTransform"), EnemiesArray))
-    {
-        for (const auto& JsonValue : *EnemiesArray)
-        {
-            TSharedPtr<FJsonObject> TransformObject = JsonValue->AsObject();
-            if (TransformObject.IsValid())
-            {
-                FTransform Transform;
+	const TArray<TSharedPtr<FJsonValue>>* EnemiesArray;
+	if (levelData->TryGetArrayField(TEXT("enemiesTransform"), EnemiesArray))
+	{
+		for (const auto& JsonValue : *EnemiesArray)
+		{
+			TSharedPtr<FJsonObject> TransformObject = JsonValue->AsObject();
+			if (TransformObject.IsValid())
+			{
+				FTransform Transform;
 
-                if (const auto& LocationObject = TransformObject->GetObjectField(TEXT("Location")))
-                {
-                    FVector Location;
-                    Location.X = LocationObject->GetNumberField(TEXT("X"));
-                    Location.Y = LocationObject->GetNumberField(TEXT("Y"));
-                    Location.Z = LocationObject->GetNumberField(TEXT("Z"));
-                    Transform.SetLocation(Location);
-                }
+				if (const auto& LocationObject = TransformObject->GetObjectField(TEXT("Location")))
+				{
+					FVector Location;
+					Location.X = LocationObject->GetNumberField(TEXT("X"));
+					Location.Y = LocationObject->GetNumberField(TEXT("Y"));
+					Location.Z = LocationObject->GetNumberField(TEXT("Z"));
+					Transform.SetLocation(Location);
+				}
 
-                if (const auto& RotationObject = TransformObject->GetObjectField(TEXT("Rotation")))
-                {
-                    FQuat Rotation;
-                    Rotation.X = RotationObject->GetNumberField(TEXT("X"));
-                    Rotation.Y = RotationObject->GetNumberField(TEXT("Y"));
-                    Rotation.Z = RotationObject->GetNumberField(TEXT("Z"));
-                    Rotation.W = RotationObject->GetNumberField(TEXT("W"));
-                    Transform.SetRotation(Rotation);
-                }
+				if (const auto& RotationObject = TransformObject->GetObjectField(TEXT("Rotation")))
+				{
+					FQuat Rotation;
+					Rotation.X = RotationObject->GetNumberField(TEXT("X"));
+					Rotation.Y = RotationObject->GetNumberField(TEXT("Y"));
+					Rotation.Z = RotationObject->GetNumberField(TEXT("Z"));
+					Rotation.W = RotationObject->GetNumberField(TEXT("W"));
+					Transform.SetRotation(Rotation);
+				}
 
-                if (const auto& ScaleObject = TransformObject->GetObjectField(TEXT("Scale")))
-                {
-                    FVector Scale;
-                    Scale.X = ScaleObject->GetNumberField(TEXT("X"));
-                    Scale.Y = ScaleObject->GetNumberField(TEXT("Y"));
-                    Scale.Z = ScaleObject->GetNumberField(TEXT("Z"));
-                    Transform.SetScale3D(Scale);
-                }
+				if (const auto& ScaleObject = TransformObject->GetObjectField(TEXT("Scale")))
+				{
+					FVector Scale;
+					Scale.X = ScaleObject->GetNumberField(TEXT("X"));
+					Scale.Y = ScaleObject->GetNumberField(TEXT("Y"));
+					Scale.Z = ScaleObject->GetNumberField(TEXT("Z"));
+					Transform.SetScale3D(Scale);
+				}
             	
-            	output.enemiesTransform.Emplace(Transform);
-            }
-        }
-    }
+				output.enemiesTransform.Emplace(Transform);
+			}
+		}
+	}
 
-    const TArray<TSharedPtr<FJsonValue>>* neutralsArray;
-    if (levelData->TryGetArrayField(TEXT("neutralsTransform"), neutralsArray))
-    {
-        for (auto& JsonValue : *neutralsArray)
-        {
-            TSharedPtr<FJsonObject> TransformObject = JsonValue->AsObject();
-            if (TransformObject.IsValid())
-            {
-                FTransform Transform;
+	const TArray<TSharedPtr<FJsonValue>>* neutralsArray;
+	if (levelData->TryGetArrayField(TEXT("neutralsTransform"), neutralsArray))
+	{
+		for (auto& JsonValue : *neutralsArray)
+		{
+			TSharedPtr<FJsonObject> TransformObject = JsonValue->AsObject();
+			if (TransformObject.IsValid())
+			{
+				FTransform Transform;
 
-                if (const auto& LocationObject = TransformObject->GetObjectField(TEXT("Location")))
-                {
-                    FVector Location;
-                    Location.X = LocationObject->GetNumberField(TEXT("X"));
-                    Location.Y = LocationObject->GetNumberField(TEXT("Y"));
-                    Location.Z = LocationObject->GetNumberField(TEXT("Z"));
-                    Transform.SetLocation(Location);
-                }
+				if (const auto& LocationObject = TransformObject->GetObjectField(TEXT("Location")))
+				{
+					FVector Location;
+					Location.X = LocationObject->GetNumberField(TEXT("X"));
+					Location.Y = LocationObject->GetNumberField(TEXT("Y"));
+					Location.Z = LocationObject->GetNumberField(TEXT("Z"));
+					Transform.SetLocation(Location);
+				}
 
-                if (const auto& RotationObject = TransformObject->GetObjectField(TEXT("Rotation")))
-                {
-                    FQuat Rotation;
-                    Rotation.X = RotationObject->GetNumberField(TEXT("X"));
-                    Rotation.Y = RotationObject->GetNumberField(TEXT("Y"));
-                    Rotation.Z = RotationObject->GetNumberField(TEXT("Z"));
-                    Rotation.W = RotationObject->GetNumberField(TEXT("W"));
-                    Transform.SetRotation(Rotation);
-                }
+				if (const auto& RotationObject = TransformObject->GetObjectField(TEXT("Rotation")))
+				{
+					FQuat Rotation;
+					Rotation.X = RotationObject->GetNumberField(TEXT("X"));
+					Rotation.Y = RotationObject->GetNumberField(TEXT("Y"));
+					Rotation.Z = RotationObject->GetNumberField(TEXT("Z"));
+					Rotation.W = RotationObject->GetNumberField(TEXT("W"));
+					Transform.SetRotation(Rotation);
+				}
 
-                if (const auto& ScaleObject = TransformObject->GetObjectField(TEXT("Scale")))
-                {
-                    FVector Scale;
-                    Scale.X = ScaleObject->GetNumberField(TEXT("X"));
-                    Scale.Y = ScaleObject->GetNumberField(TEXT("Y"));
-                    Scale.Z = ScaleObject->GetNumberField(TEXT("Z"));
-                    Transform.SetScale3D(Scale);
-                }
+				if (const auto& ScaleObject = TransformObject->GetObjectField(TEXT("Scale")))
+				{
+					FVector Scale;
+					Scale.X = ScaleObject->GetNumberField(TEXT("X"));
+					Scale.Y = ScaleObject->GetNumberField(TEXT("Y"));
+					Scale.Z = ScaleObject->GetNumberField(TEXT("Z"));
+					Transform.SetScale3D(Scale);
+				}
             	
-            	output.neutralsTransform.Emplace(Transform);
-            }
-        }
-    }
+				output.neutralsTransform.Emplace(Transform);
+			}
+		}
+	}
 	return true;
-}
-
-void UNPCManager::CreateActions()
-{
-	phaseActions.Add(EPhase::Idle, NewObject<UIdleAction>());
-	phaseActions.Add(EPhase::HipFire, NewObject<UHipFireAction>());
-	damagedActions.Add(EDamageState::SmallDamaged, NewObject<USmallDamaged>());
-	damagedActions.Add(EDamageState::Death, NewObject<UDeadlyDamaged>());
-	moveActions.Add(EMoveState::Stop, NewObject<UStopMove>());
-	moveActions.Add(EMoveState::Patrol, NewObject<UPatrolMove>());
-	moveActions.Add(EMoveState::Chase, NewObject<UChaseMove>());
-	
 }
 
 

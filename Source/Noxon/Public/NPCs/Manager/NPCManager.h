@@ -3,15 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Subsystems/WorldSubsystem.h"
+#include "Components/ActorComponent.h"
 #include "NPCManager.generated.h"
 
 
+class UStateAction;
+
+enum class EPhase : uint8;
 enum class EDamageState : uint8;
 enum class EMoveState : uint8;
-class UStateAction;
-enum class EPhase : uint8;
-class AMainPlayer;
 class ABaseNonPlayableCharacter;
 
 // using with modified dist as squared dist
@@ -21,8 +21,8 @@ struct FLODPropertiesForActivateNPC : public FTableRowBase
 	GENERATED_USTRUCT_BODY()
 public:
 	FLODPropertiesForActivateNPC()
-		: visibleDist(500.f)
-		, tickableDist(1000.f)
+		: visibleDist(1000.f)
+		, tickableDist(2000.f)
 		, updateTime(0.5f)
 	{}
 	
@@ -61,33 +61,44 @@ enum class ENpcActivateType : uint8
 	End UMETA(Hidden)
 };
 
+
+// convert to Array or set in multiplay game 
+USTRUCT(BlueprintType)
+struct FProximityCheckContext
+{
+	GENERATED_USTRUCT_BODY()
+	
+	float dist = 0.f;
+	FVector direction = FVector::ZeroVector;
+	UPROPERTY()
+	APawn* target = nullptr;
+};
+
 /**
  * 
  */
 UCLASS()
-class NOXON_API UNPCManager : public UTickableWorldSubsystem
+class NOXON_API UNPCManager : public UActorComponent
 {
 	GENERATED_BODY()
 
-	struct FProximityCheckContext
-	{
-		int32 index = -1;
-		ENpcActivateType activeType;
-	};
 	
 public:
-	virtual TStatId GetStatId() const override;
-	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
-	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
-	virtual void Tick(float DeltaTime) override;
-	virtual void Deinitialize() override;
+	UNPCManager();
+
+protected:
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+public:
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UFUNCTION()
 	FORCEINLINE void RegisterPlayers(APlayerController* playerController)
-	{playerContainer.AddUnique(playerController);}
+	{playerContainer.Add(playerController);}
 	UFUNCTION()
-	FORCEINLINE void UnregisterPlayers(APlayerController* playerController)
-	{playerContainer.RemoveSingleSwap(playerController, EAllowShrinking::Yes);}
+	FORCEINLINE void UnregisterPlayers(const APlayerController* playerController)
+	{playerContainer.Remove(playerController);}
 
 	UFUNCTION()
 	void RegisterNPC(ABaseNonPlayableCharacter* npc)
@@ -101,9 +112,11 @@ public:
 	void PushNPCsTransformsForWorld();
 
 protected:
-	
 	UFUNCTION()
 	void ProcessNPCsBatch();
+	void ForEachNPCsBatch(ABaseNonPlayableCharacter* npc);
+	void ParallelForNPCsBatch();
+	
 
 private:
 	void SaveNPCsTransformToJson(const FNPCsTransform& NPCData);
@@ -113,16 +126,15 @@ private:
 	
 protected:
 	UPROPERTY()
-	TArray<APlayerController*> playerContainer;
+	TSet<APlayerController*> playerContainer;
 	
 	UPROPERTY()
-	TArray<ABaseNonPlayableCharacter*> npcContainer;
+	TSet<ABaseNonPlayableCharacter*> npcContainer;
 
-	UPROPERTY()
-	TSet<ABaseNonPlayableCharacter*> activatedNpcContainer;
+	TMap<ABaseNonPlayableCharacter*, FProximityCheckContext> activatedNpcContainer;
 
-	UPROPERTY()
-	FLODPropertiesForActivateNPC lodProperties = FLODPropertiesForActivateNPC();
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=LOD)
+	FLODPropertiesForActivateNPC lodProperties;
 
 	float batchDeltaTime = 0.f;
 
