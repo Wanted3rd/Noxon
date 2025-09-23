@@ -48,8 +48,10 @@ void AAmmo::SetActive(bool bActive)
 	if (bActive)
 	{
 		bodyMesh->SetVisibility(true);
+		SetActorHiddenInGame(false);
 		collisionComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		moveComp->Velocity = GetActorForwardVector() * moveComp->InitialSpeed;
+		moveComp->AddForce(GetVelocity());
 
 		GetWorldTimerManager().SetTimer(projectileTimerHandle, [&]()->void
 		{
@@ -62,7 +64,7 @@ void AAmmo::SetActive(bool bActive)
 		bodyMesh->SetVisibility(false);
 		// collision
 		collisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		
+		SetActorHiddenInGame(true);
 	}
 }
 

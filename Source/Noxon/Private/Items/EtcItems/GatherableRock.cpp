@@ -5,7 +5,8 @@
 
 #include "Components/WidgetComponent.h"
 #include "Items/HandItems/PickAxe.h"
-
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/Character.h"
 
 // Sets default values
 AGatherableRock::AGatherableRock()
@@ -26,18 +27,18 @@ AGatherableRock::AGatherableRock()
 	// 3. 메시 자체 콜라이더를 이용하고 싶으면
 	RockMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	RockMesh->SetCollisionObjectType(ECC_WorldStatic);
-	RockMesh->SetCollisionProfileName(TEXT("BlockAll"));
+	RockMesh->SetCollisionResponseToAllChannels(ECR_Block);
+	RockMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 
 	WidgetComp = CreateDefaultSubobject<UWidgetComponent>(TEXT("WidgetComp"));
 	WidgetComp->SetupAttachment(RootComponent);
 
-	static ConstructorHelpers::FClassFinder<UUserWidget> TempWidget(TEXT("/Game/UI/WBP_GatherableObjectHP.WBP_GatherableObjectHP"));
+	static ConstructorHelpers::FClassFinder<UUserWidget> TempWidget(TEXT("/Game/UI/WBP_GatherableObjectHP.WBP_GatherableObjectHP_C"));
 	if (TempWidget.Succeeded())
 	{
 		WidgetComp->SetWidgetClass(TempWidget.Class);
 	}
-	WidgetComp->SetRelativeScale3D(FVector(0.6, 0.25, 1));
-	
+	WidgetComp->SetRelativeScale3D(FVector(1, 0.6, 0.05));
 }
 
 // Called when the game starts or when spawned
@@ -45,26 +46,34 @@ void AGatherableRock::BeginPlay()
 {
 	Super::BeginPlay();
 
-	RockMesh->OnComponentHit.AddDynamic(this, &AGatherableRock::OnHit);
-
+	// RockMesh->OnComponentHit.AddDynamic(this, &AGatherableRock::OnHit);
+	WidgetComp = Cast<UWidgetComponent>(GetComponentByClass(UWidgetComponent::StaticClass()));
 }
 
 // Called every frame
 void AGatherableRock::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	if (WidgetComp)
+	{
+		if (ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
+		{
+			FVector direction = PlayerCharacter->GetActorLocation() - GetActorLocation();
+			direction.Z = 0; // 위쪽 방향 제거 (수평 회전만)
+			WidgetComp->SetWorldRotation(direction.Rotation());
+		}
+	}
 }
 
-void AGatherableRock::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
-							UPrimitiveComponent* OtherComp, FVector NormalImpulse,
-							const FHitResult& Hit)
-{
-	// if (OtherActor && OtherActor->IsA(APickAxe::StaticClass()))
-	// {
-	// 	UE_LOG(LogTemp, Warning, TEXT("돌이 곡괭이에 맞았다!"));
-	// 	// 채집 로직 또는 데미지 처리
-	// }
-	
-		m_Dele_hit.Broadcast(this, OtherActor);
+ void AGatherableRock::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
+ 							UPrimitiveComponent* OtherComp, FVector NormalImpulse,
+ 							const FHitResult& Hit)
+ {
+ 	// if (OtherActor && OtherActor->IsA(APickAxe::StaticClass()))
+ 	// {
+ 	// 	UE_LOG(LogTemp, Warning, TEXT("돌이 곡괭이에 맞았다!"));
+ 	// 	// 채집 로직 또는 데미지 처리
+ 	// }
+ 	
+	//m_Dele_hit.Broadcast(this, OtherActor);
 } 

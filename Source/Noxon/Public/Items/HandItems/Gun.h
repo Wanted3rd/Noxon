@@ -21,16 +21,19 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float reloadTime;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float fireRate;
 
-	UPROPERTY()
-	float fireDelay;
+
+	//계속해서 갱신되는 애들은 UPROPERTY()이 딱히 필요없다.
 	float delayDeltaTime;
-	
+
+	FTimerHandle FireRateHandle;     // 발사 딜레이용 타이머
+
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	bool bIsAutomatic; // 자동/단발여부
@@ -53,11 +56,6 @@ protected:
 	float handDmg;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float footDmg;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	TObjectPtr<USkeletalMeshComponent> gunSKM;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	TObjectPtr<UStaticMeshComponent> gunSM;
 	
 	//총알 관련 값
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -65,12 +63,14 @@ protected:
 	float range; //유효사거리
 	float bulletSpread; //탄 퍼짐 정도
 	float recoil;
-	
+	float bHoldingLeftClick = false;
+
 	UPROPERTY()
 	TArray<AAmmo*> ammoPool;
 	UPROPERTY()
 	TArray<AAmmo*> reloadingPool;
 	TSubclassOf<AAmmo> ammoFactory;
+	
 	
 public:
 	// Called every frame
@@ -79,7 +79,11 @@ public:
 	virtual void LeftAction() override;
 	virtual void RightAction() override;
 	virtual int RKeyAction(int inValue) override;
-	
+
+
+private:
+	UPROPERTY()
+	float fireDelay;
 		
 };
 

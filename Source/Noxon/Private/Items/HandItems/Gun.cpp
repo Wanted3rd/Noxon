@@ -3,7 +3,10 @@
 
 #include "Items/HandItems/Gun.h"
 
+#include "Engine/SkeletalMeshSocket.h"
 #include "Items/EtcItems/Ammo.h"
+#include "Kismet/GameplayStatics.h"
+#include "Player/ISocketProvider.h"
 #include "Utility/DebugHelper.h"
 
 
@@ -34,7 +37,12 @@ void AGun::BeginPlay()
 		ammoPool.Add(ammo);
 		ammo->SetActive(false);
 	}
-	fireDelay = 1 / fireRate;
+	if (fireRate > 0.f)
+	{
+		fireDelay = 1 / fireRate;
+	}
+
+
 }
 
 void AGun::Tick(float DeltaTime)
@@ -51,17 +59,19 @@ void AGun::LeftAction()
 	if (delayDeltaTime > 0.f)
 	{
 		return;
-	}
+	} 
 	delayDeltaTime += fireDelay;
 	FTransform muzzleTransform;
-	if (IsValid(gunSKM->GetSkeletalMeshAsset()))
+	if (IsValid(skeletalMesh))
 	{
-		muzzleTransform = gunSKM->GetSocketTransform("muzzleSocket");
-	}
-	else if (IsValid(gunSM->GetStaticMesh()))
-	{
-		muzzleTransform = gunSKM->GetSocketTransform("muzzleSocket");
-	}
+		// muzzleTransform = skeletalMesh->FindSocket("weapon_r_muzzle")->GetSocketLocalTransform();
+		if (AActor* OwnerActor = GetOwner()) {
+			if (IISocketProvider* Provider = Cast<IISocketProvider>(OwnerActor)) {
+				muzzleTransform = Provider->GetSocketTransform("Muzzle");
+			} 
+		} 
+
+	}	
 	else
 	{
 		LOG_TEXT(TEXT("not Exist Socket"));

@@ -53,10 +53,10 @@ public:
 
 private:
     // 상태(런타임 전용)
-    UPROPERTY(Transient)
+    UPROPERTY(/*Transient*/)
     TMap<FName /*DefId*/, AHandItem*> Instances;
 
-    UPROPERTY(Transient)
+    UPROPERTY(/*Transient*/)
     TSet<FName> InUseHandItems;
 
 

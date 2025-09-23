@@ -6,7 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "GatherableRock.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDele_Hit, AGatherableRock*, hitRock, AActor*, pickAxe);
+// DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDele_Hit, AGatherableRock*, hitRock, AActor*, pickAxe);
 
 UCLASS()
 class NOXON_API AGatherableRock : public AActor
@@ -28,11 +28,11 @@ public:
 	UPROPERTY(EditAnywhere)
 	class UStaticMeshComponent* RockMesh;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UWidgetComponent* WidgetComp;
 
-	UPROPERTY(BlueprintAssignable, VisibleAnywhere, Blueprintable);
-	FDele_Hit m_Dele_hit;
+	// UPROPERTY(BlueprintAssignable, VisibleAnywhere, Blueprintable);
+	// FDele_Hit m_Dele_hit;
 
 
 	// 피격시 호출될 이벤트 함수 -> 콜백

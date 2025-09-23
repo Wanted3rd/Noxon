@@ -18,6 +18,11 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	
 
+
+	virtual void RightAction() override;
+	virtual int RKeyAction(int inValue) override;
 public:
+	
 };

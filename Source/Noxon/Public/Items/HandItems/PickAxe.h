@@ -35,4 +35,8 @@ public:
 public:
 	UFUNCTION()
 	virtual void DamageRock(AGatherableRock* hitRock, AActor* pickAxe);
+
+	UFUNCTION()
+	virtual void LeftAction() override;
+	// virtual void RightAction() override {}
 };
