@@ -332,6 +332,8 @@ void AMainPlayer::PlayerControlCalculate()
 
 void AMainPlayer::FireWeapon()
 {
+	if (HandItem != nullptr)
+	{
 	// 스프린트 중이면 발사하지 않음
 	if (bIsSprinting)
 	{
@@ -365,6 +367,7 @@ void AMainPlayer::FireWeapon()
 			bulletPool.RemoveAt(0);
 		}
 		
+	}
 	}
 }
 

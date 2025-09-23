@@ -3,7 +3,6 @@
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
 #include "UObject/SoftObjectPtr.h"
-#include "GameplayTagContainer.h"
 #include "InventoryType.generated.h"
 
 class UTexture2D;
@@ -63,12 +62,9 @@ struct FItemStaticData : public FTableRowBase
 	// 풀 생성용 핸드 아이템 클래스 (BP/C++ 서브클래스 경로)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSoftClassPtr<AHandItem> HandItemClass;
-
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FGameplayTagContainer Tags; // 카테고리/필터(예: Item.Consumable, Item.Weapon 등)
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 MaxStackSize = 1;     // 1이면 비스택
+	int32 MaxStackSize = -1;     // 1이면 비스택
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bStackable = false;    // MaxStackSize>1 과 중복되지만 명시적 플래그
@@ -93,17 +89,9 @@ struct FItemInstanceState
 	FGuid InstanceId;
 
 	// 대표 예시 필드들(필요한 것만 사용/확장)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float RemainingTime = 0.f;     // 예: 토치 남은 지속시간(초)
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 Durability = -1;         // -1이면 미사용
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 Magazine = -1;           // -1이면 미사용
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 Reserve = -1;            // -1이면 미사용
 };
 
 /**
@@ -169,18 +157,8 @@ struct FInventorySlotView
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSoftObjectPtr<UTexture2D> Icon;
 
-	// 인스턴스 상태에서 노출하고 싶은 일부(예시)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float RemainingTime = 0.f;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 Durability = -1;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 Magazine = -1;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 Reserve = -1;
 };
 
 /**

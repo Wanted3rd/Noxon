@@ -3,6 +3,8 @@
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Inventory/Inventory.h"
+#include "Inventory/InventoryType.h"
 #include "UI/InventoryGridSlot.h"
 #include "Utility/DebugHelper.h"
 
@@ -13,97 +15,189 @@ void UInventoryGrid::NativeOnInitialized()
 	GridConstruct();
 }
 
-void UInventoryGrid::SetOwningCanvas(UCanvasPanel* OwningCanvas)
+void UInventoryGrid::NativeDestruct()
 {
-	if (CanvasPanel && CanvasPanel != OwningCanvas)
+	if (BoundInventory.IsValid())
 	{
-		CanvasPanel->ClearChildren();
+		BoundInventory->OnInventorySlotsChanged.RemoveDynamic(this, &UInventoryGrid::HandleInventorySlotsChanged);
+		BoundInventory.Reset();
 	}
 
-	if (OwningCanvas)
+	Super::NativeDestruct();
+}
+
+void UInventoryGrid::SetOwningCanvas(class UCanvasPanel* OwningCanvas)
+{
+	OwningCanvasPanel = OwningCanvas;
+}
+
+void UInventoryGrid::InitializeInventory(UInventory* InInventory)
+{
+	if (BoundInventory.Get() == InInventory)
 	{
-		BuildGrid(OwningCanvas);
+		// The grid already consumes this inventory; force a refresh in case slot visuals fell out of sync.
+		RefreshAllSlots();
+		return;
 	}
-	else
+
+	if (UInventory* PreviousInventory = BoundInventory.Get())
 	{
-		GridConstruct();
+		PreviousInventory->OnInventorySlotsChanged.RemoveDynamic(this, &UInventoryGrid::HandleInventorySlotsChanged);
+	}
+
+	BoundInventory = InInventory;
+	if (!BoundInventory.IsValid())
+	{
+		RefreshAllSlots();
+		return;
+	}
+
+	BoundInventory->OnInventorySlotsChanged.AddDynamic(this, &UInventoryGrid::HandleInventorySlotsChanged);
+
+	Rows = BoundInventory->NumRows;
+	Cols = BoundInventory->NumCols;
+
+	GridConstruct();
+}
+
+void UInventoryGrid::RefreshAllSlots()
+{
+	if (!bGridConstructed)
+	{
+		return;
+	}
+
+	for (int32 SlotIdx = 0; SlotIdx < GridSlots.Num(); ++SlotIdx)
+	{
+		RefreshSlotInternal(SlotIdx);
 	}
 }
 
 void UInventoryGrid::GridConstruct()
 {
-	BuildGrid(CanvasPanel);
-}
-
-void UInventoryGrid::BuildGrid(UCanvasPanel* TargetPanel)
-{
-	GridSlots.Reset();
-
-	if (!TargetPanel || !GridSlotClass)
+	if (!CanvasPanel || !GridSlotClass)
 	{
-		if (TargetPanel)
-		{
-			TargetPanel->ClearChildren();
-		}
 		return;
 	}
 
-	TargetPanel->ClearChildren();
+	ClearGrid();
 
-	const int32 EffectiveRows = FMath::Max(1, Rows);
-	const int32 EffectiveCols = FMath::Max(1, Cols);
-	const float EffectiveSlotSize = FMath::Max(1.f, SlotSize);
+	const int32 ClampedRows = FMath::Max(1, Rows);
+	const int32 ClampedCols = FMath::Max(1, Cols);
 
-	GridSlots.Reserve(EffectiveRows * EffectiveCols);
+	GridSlots.Reserve(ClampedRows * ClampedCols);
 
-	for (int32 Row = 0; Row < EffectiveRows; ++Row)
+	for (int32 j = 0; j < ClampedRows; ++j)
 	{
-		for (int32 Col = 0; Col < EffectiveCols; ++Col)
+		for (int32 i = 0; i < ClampedCols; ++i)
 		{
-			if (UInventoryGridSlot* SlotWidget = CreateWidget<UInventoryGridSlot>(this, GridSlotClass))
+			UInventoryGridSlot* SlotWidget = CreateWidget<UInventoryGridSlot>(this, GridSlotClass);
+			if (!SlotWidget)
 			{
-				if (UCanvasPanelSlot* CanvasSlot = TargetPanel->AddChildToCanvas(SlotWidget))
-				{
-					const int32 Index = Row * EffectiveCols + Col;
-					SlotWidget->SetSlotIndex(Index);
-
-					CanvasSlot->SetAutoSize(false);
-					CanvasSlot->SetAlignment(FVector2D::ZeroVector);
-					CanvasSlot->SetPosition(FVector2D(Col * EffectiveSlotSize, Row * EffectiveSlotSize));
-					CanvasSlot->SetSize(FVector2D(EffectiveSlotSize, EffectiveSlotSize));
-
-					GridSlots.Add(SlotWidget);
-					LOG_TEXT(TEXT("slot : %d, %d, %.2f"), Col, Row, EffectiveSlotSize);
-					LOG_TEXT(TEXT("%d"), GridSlots.Num());
-				}
+				continue;
 			}
+
+			CanvasPanel->AddChild(SlotWidget);
+
+			const int32 Index = j * ClampedCols + i;
+			SlotWidget->SetSlotIndex(Index);
+			SlotWidget->InitializeSlot(this);
+
+			if (UCanvasPanelSlot* GridSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(SlotWidget))
+			{
+				GridSlot->SetSize(FVector2D(SlotSize));
+				const FVector2D SlotPosition(static_cast<float>(i) * SlotSize, static_cast<float>(j) * SlotSize);
+				GridSlot->SetPosition(SlotPosition);
+			}
+
+			GridSlots.Add(SlotWidget);
 		}
 	}
 
-	const FVector2D TotalSize(EffectiveCols * EffectiveSlotSize, EffectiveRows * EffectiveSlotSize);
+	bGridConstructed = true;
 
-	if (UCanvasPanelSlot* PanelSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(TargetPanel))
-	{
-		PanelSlot->SetAutoSize(false);
-		PanelSlot->SetAlignment(FVector2D::ZeroVector);
-		PanelSlot->SetSize(TotalSize);
-	}
-
-	if (TargetPanel == CanvasPanel)
-	{
-		if (UCanvasPanelSlot* WidgetSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(this))
-		{
-			WidgetSlot->SetAutoSize(false);
-			WidgetSlot->SetAlignment(FVector2D::ZeroVector);
-			WidgetSlot->SetSize(TotalSize);
-		}
-	}
+	RefreshAllSlots();
 }
-
-FVector2D UInventoryGrid::GetTotalPixelSize() const
+void UInventoryGrid::RefreshSlotInternal(int32 SlotIndex)
 {
-	const float EffectiveSlotSize = FMath::Max(1.f, SlotSize);
-	const int32 EffectiveRows = FMath::Max(1, Rows);
-	const int32 EffectiveCols = FMath::Max(1, Cols);
-	return FVector2D(EffectiveCols * EffectiveSlotSize, EffectiveRows * EffectiveSlotSize);
+	if (!GridSlots.IsValidIndex(SlotIndex))
+	{
+		return;
+	}
+
+	UInventoryGridSlot* SlotWidget = GridSlots[SlotIndex];
+	if (!SlotWidget)
+	{
+		return;
+	}
+
+	FInventorySlotView SlotView;
+	bool bHasData = false;
+
+	if (BoundInventory.IsValid())
+	{
+		bHasData = BoundInventory->GetSlotView(SlotIndex, SlotView);
+	}
+
+	if (!bHasData)
+	{
+		SlotView = FInventorySlotView{};
+		SlotView.SlotIndex = SlotIndex;
+	}
+
+	// Defer to the slot widget for visual updates; implementation lives in the slot class.
+	SlotWidget->RefreshFromView(SlotView);
 }
+
+void UInventoryGrid::ClearGrid()
+{
+	if (CanvasPanel)
+	{
+		CanvasPanel->ClearChildren();
+	}
+
+	GridSlots.Empty();
+	bGridConstructed = false;
+}
+
+bool UInventoryGrid::HandleSlotDrop(int32 FromIndex, int32 ToIndex)
+{
+	if (!BoundInventory.IsValid() || FromIndex == ToIndex)
+	{
+		return false;
+	}
+
+	// Delegate the move operation to the inventory component so it can handle stacking rules.
+	FInventoryOpResult MoveResult = BoundInventory->MoveItem(FromIndex, ToIndex, 0);
+	if (!MoveResult.bSuccess)
+	{
+		return false;
+	}
+
+	RefreshSlotInternal(FromIndex);
+	RefreshSlotInternal(ToIndex);
+	return true;
+}
+void UInventoryGrid::HandleInventorySlotsChanged(const TArray<int32>& ChangedSlots)
+{
+	for (const int32 SlotIndex : ChangedSlots)
+	{
+		RefreshSlotInternal(SlotIndex);
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
