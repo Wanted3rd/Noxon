@@ -16,11 +16,6 @@
 ABaseNonPlayableCharacter::ABaseNonPlayableCharacter()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	animFactory = FinderHelper::GetClassFromConstructor<UNPCAnimInstance>(TEXT("/Game/NPCs/ABP_NPC_C"));
-	if (animFactory != nullptr)
-	{
-		GetMesh()->SetAnimInstanceClass(animFactory);
-	}
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 }

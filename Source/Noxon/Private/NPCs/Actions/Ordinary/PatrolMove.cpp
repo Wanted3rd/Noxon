@@ -17,17 +17,24 @@ void UPatrolMove::OnBegin(ABaseNonPlayableCharacter* owner)
 
 void UPatrolMove::OnTick(ABaseNonPlayableCharacter* owner, float deltaTime)
 {
+	if (!owner) return;
+
 	FHitResult hitResult;
 	owner->MoveBlockedBy(hitResult);
 	if (hitResult.ImpactPoint.Z > owner->GetActorLocation().Z + 60.f)
 	{
-		owner->GetFSMComp()->ActivatePhaseState(EPhase::Idle);
+		owner->GetFSMComp()->ActivateMoveState(EMoveState::Stop);
+		return;
 	}
+
 	FVector goalLocation;
 	if (owner->GetActionComp()->GetGoalLocation(goalLocation))
 	{
 		owner->GetAIController()->MoveToLocation(goalLocation);
+		owner->GetActionComp()->TogglePatrolFlag();
+		return;
 	}
+	owner->GetFSMComp()->ActivateMoveState(EMoveState::Stop);
 }
 
 void UPatrolMove::OnEnd(ABaseNonPlayableCharacter* owner)

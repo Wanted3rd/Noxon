@@ -6,22 +6,42 @@
 #include "NPCs/BaseNonPlayableCharacter.h"
 #include "Items/HandItems/Gun.h"
 #include "NPCs/Components/FSMComponent.h"
+#include "NPCs/Components/ActionComponent.h"
 #include "NPCs/Datas/StateEnums.h"
+#include "Engine/World.h"
 
 void UReloadingAction::OnBegin(ABaseNonPlayableCharacter* owner)
 {
-	if (AGun* gun = Cast<AGun>(owner->GetHandItem()))
-	{
-		FItemProperty gunProperty = gun->GetItemProperty();
-		owner->GetHandItem()->RKeyAction(gunProperty.maxMagazine);
-	}
+	if (!owner || !owner->GetActionComp()) return;
+
+	AGun* gun = Cast<AGun>(owner->GetHandItem());
+	if (!gun) return;
+
+	const FItemProperty& gunProperty = gun->GetItemProperty();
+	int32 ammoNeeded = gunProperty.maxMagazine - gunProperty.magazine;
+
+	gun->RKeyAction(ammoNeeded);
+
+	owner->GetActionComp()->ResetReloadTime();
 }
 
 void UReloadingAction::OnTick(ABaseNonPlayableCharacter* owner, float deltaTime)
 {
-	owner->GetFSMComp()->ActivatePhaseState(EPhase::Idle);
+	if (!owner || !owner->GetActionComp()) return;
+
+	float reloadTime = owner->GetActionComp()->GetReloadTime();
+	reloadTime += deltaTime;
+	owner->GetActionComp()->SetReloadTime(reloadTime);
+
+	const float reloadDuration = 3.0f;
+
+	if (reloadTime >= reloadDuration)
+	{
+		owner->GetFSMComp()->ActivatePhaseState(EPhase::HipFire);
+		owner->GetFSMComp()->ActivateMoveState(EMoveState::Chase);
+	}
 }
 
-void UReloadingAction::End(ABaseNonPlayableCharacter* owner)
+void UReloadingAction::OnEnd(ABaseNonPlayableCharacter* owner)
 {
 }

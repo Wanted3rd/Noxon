@@ -8,6 +8,9 @@
 #include "NPCs/Components/FSMComponent.h"
 #include "NPCs/Components/PerceptionComponent.h"
 #include "NPCs/Datas/StateEnums.h"
+#include "NPCs/Enemy.h"
+#include "Perception/AIPerceptionComponent.h"
+#include "Player/MainPlayer.h"
 
 void UChaseMove::OnBegin(ABaseNonPlayableCharacter* owner)
 {
@@ -16,17 +19,38 @@ void UChaseMove::OnBegin(ABaseNonPlayableCharacter* owner)
 
 void UChaseMove::OnTick(ABaseNonPlayableCharacter* owner, float deltaTime)
 {
-	AActor* target = owner->GetPerceptionComp()->GetTarget();
-	FVector directionToTarget = FVector::ZeroVector;
-	float distanceToTarget = -1.f;
-	if (IsValid(target))
+	if (!owner) return;
+
+	AEnemy* enemy = Cast<AEnemy>(owner);
+	if (!enemy) return;
+
+	AActor* target = nullptr;
+
+	if (UAIPerceptionComponent* aiPerception = enemy->GetAIPerceptionComponent())
 	{
-		directionToTarget = target->GetActorLocation() - owner->GetActorLocation();
-		distanceToTarget = directionToTarget.Size();
-		directionToTarget = directionToTarget.GetSafeNormal();
+		TArray<AActor*> perceivedActors;
+		aiPerception->GetCurrentlyPerceivedActors(nullptr, perceivedActors);
+
+		for (AActor* actor : perceivedActors)
+		{
+			if (Cast<AMainPlayer>(actor))
+			{
+				target = actor;
+				break;
+			}
+		}
 	}
+
+	if (!target) return;
+
+	FVector directionToTarget = target->GetActorLocation() - owner->GetActorLocation();
+	float distanceToTarget = directionToTarget.Size();
+	directionToTarget = directionToTarget.GetSafeNormal();
+
 	owner->AddMovementInput(directionToTarget);
-	if (distanceToTarget > 0.f && distanceToTarget < owner->GetPerceptionComp()->GetPerceptionProperties().gunFireRange)
+
+	const float shootingRange = 800.0f;
+	if (distanceToTarget <= shootingRange)
 	{
 		owner->GetFSMComp()->ActivatePhaseState(EPhase::HipFire);
 	}

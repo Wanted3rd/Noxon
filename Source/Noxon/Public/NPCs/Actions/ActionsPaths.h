@@ -9,6 +9,7 @@
 #include "Battle/MeleeAttackAction.h"
 #include "Battle/HipFireAction.h"
 #include "Battle/AimingFireAction.h"
+#include "Battle/ReloadingAction.h"
 #include "Battle/ChaseMove.h"
 #include "Battle/WeaveMove.h"
 #include "Battle/HideMove.h"

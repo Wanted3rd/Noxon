@@ -147,14 +147,17 @@ void UNPCManager::DestroyNPC(ABaseNonPlayableCharacter* npc)
 
 void UNPCManager::CreateActions()
 {
-	phaseActions.Add(EPhase::Idle, NewObject<UIdleAction>());
+	phaseActions.Add(EPhase::OrdinaryPhase, NewObject<UIdleAction>());
 	phaseActions.Add(EPhase::HipFire, NewObject<UHipFireAction>());
+	phaseActions.Add(EPhase::Reloading, NewObject<UReloadingAction>());
+
 	damagedActions.Add(EDamageState::SmallDamaged, NewObject<USmallDamaged>());
 	damagedActions.Add(EDamageState::Death, NewObject<UDeadlyDamaged>());
+
 	moveActions.Add(EMoveState::Stop, NewObject<UStopMove>());
 	moveActions.Add(EMoveState::Patrol, NewObject<UPatrolMove>());
 	moveActions.Add(EMoveState::Chase, NewObject<UChaseMove>());
-	
+	moveActions.Add(EMoveState::Weave, NewObject<UWeaveMove>());
 }
 
 void UNPCManager::ParallelForNPCsBatch()

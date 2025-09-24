@@ -51,7 +51,7 @@ void UActionComponent::ResetActions()
 bool UActionComponent::GetGoalLocation(FVector& outLocation)
 {
 	outLocation = goalLocation;
-	return FVector::Dist(goalLocation, owner->GetActorLocation()) < 5.f;
+	return FVector::Dist(goalLocation, owner->GetActorLocation()) < 30.f;
 }
 
 void UActionComponent::PhaseTick(float deltaTime)
@@ -124,6 +124,10 @@ void UActionComponent::DamagedTick(float deltaTime)
 
 void UActionComponent::RandPos()
 {
+	if (!patrolFlag)
+	{
+		goalLocation = owner->GetInitTransform().GetLocation();
+	}
 	FVector2D randPos = FVector2D::ZeroVector;
 	FVector2D initPos = {owner->GetInitTransform().GetLocation().X, owner->GetInitTransform().GetLocation().Y};
 	FVector start = FVector::ZeroVector;
