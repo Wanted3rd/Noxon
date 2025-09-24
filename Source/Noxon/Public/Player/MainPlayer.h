@@ -3,11 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ISocketProvider.h"
 #include "GameFramework/Character.h"
 #include "MainPlayer.generated.h"
 
+
 UCLASS()
-class NOXON_API AMainPlayer : public ACharacter
+class NOXON_API AMainPlayer : public ACharacter,  public IISocketProvider
 {
 	GENERATED_BODY()
 
@@ -35,7 +37,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<class UCameraComponent> camera;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TObjectPtr<class USkeletalMeshComponent> handItemMesh;
+	TObjectPtr<class USkeletalMeshComponent> viewHandItemSKM;
+
+	UPROPERTY()
+	class AHandItem* handItem = nullptr;
 	
 	// 이동 관련@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	float speed;
@@ -62,15 +67,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	// TSubclassOf<class UHudComponent> hudComp; 
 	class UHudComponent* hudComp; 
-
-	
-
-	//HandItem
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSubclassOf<class AHandItem> handItemClass;
-
-	UPROPERTY(VisibleAnywhere)
-	class AHandItem* HandItem = nullptr;
 	
 	
 	//Input Action - IA
@@ -97,6 +93,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	class UInputAction* ia_rightAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	class UInputAction* ia_rKeyAction;
 
 	
 public:
@@ -130,6 +129,9 @@ public:
 
 	UFUNCTION()
 	void CompleteLeftActionInput(const struct FInputActionValue& value);
+
+	UFUNCTION()
+	void TriggerRKeyActionInput(const struct FInputActionValue& value);
 	
 	// UFUNCTION()
 	// void StartLeftActionInput(const struct FInputActionValue& value);
@@ -147,8 +149,9 @@ public:
 	// void ResetFire();
 
 public:
-	//temp
 
+
+	
 	// 총알공장
 	UPROPERTY(EditDefaultsOnly, Category=Bullet)
 	TSubclassOf<class ARifleDefaultAmmo> bulletFactory;
@@ -163,4 +166,9 @@ public:
 	// 탄창
 	UPROPERTY()
 	TArray<class ARifleDefaultAmmo*> bulletPool;
+
+public:
+	UFUNCTION()
+	virtual FTransform GetSocketTransform(FName SocketName) const override;
+
 };

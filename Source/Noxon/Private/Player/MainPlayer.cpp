@@ -10,6 +10,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Items/EtcItems/RifleDefaultAmmo.h"
 #include "Items/HandItems/HandItem.h"
+#include "Items/HandItems/PickAxe.h"
 #include "Items/HandItems/RifleDemoGun.h"
 #include "Player/Components/Hud/HudComponent.h"
 #include "Utility/FindHelper.h"
@@ -66,17 +67,19 @@ AMainPlayer::AMainPlayer()
 	camera->SetRelativeRotation(FRotator(0, 0, 0));
 	camera->FieldOfView = 90.f;
 	
-	handItemMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("HandItemMesh"));
-	handItemMesh->bOnlyOwnerSee = true;
-	handItemMesh->CastShadow = false;
-	handItemMesh->SetupAttachment(armMesh, TEXT("ik_hand_gun"));
+	viewHandItemSKM = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("viewHandItemSKM"));
+	
+	viewHandItemSKM->bOnlyOwnerSee = true;
+	viewHandItemSKM->CastShadow = false;
+
+
 	
 	
-	static ConstructorHelpers::FObjectFinder<USkeletalMesh> tempRifle(TEXT("/Game/Assets/CustomAssets/FP_Gun/AssultRifle/Meshes/SK_AssaultRifle.SK_AssaultRifle"));
+	/*static ConstructorHelpers::FObjectFinder<USkeletalMesh> tempRifle(TEXT("/Game/Assets/CustomAssets/FP_Gun/AssultRifle/Meshes/SK_AssaultRifle.SK_AssaultRifle"));
 	if (tempRifle.Succeeded())
 	{
-		handItemMesh->SetSkeletalMesh(tempRifle.Object);
-	}
+		viewHandItemSKM->SetSkeletalMesh(tempRifle.Object);
+	}*/
 
 	
 	imc_mainplayer = LoadObject<UInputMappingContext>(nullptr, TEXT("/Game/Player/Input/IMC_MainPlayer.IMC_MainPlayer.IMC_MainPlayer"));
@@ -138,8 +141,6 @@ AMainPlayer::AMainPlayer()
 		ia_rightAction = TempRightAction.Object;
 	}
 
-	handItemClass = ARifleDemoGun::StaticClass();
-
 	bulletFactory = ARifleDefaultAmmo::StaticClass();
 
 }
@@ -159,46 +160,62 @@ void AMainPlayer::BeginPlay()
 			subsys->AddMappingContext(imc_mainplayer, 0);
 		}
 	}
+	// AMainPlayer에서 총 스폰
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this; // 플레이어를 Owner로 지정
+	// handItem = GetWorld()->SpawnActor<ARifleDemoGun>();
+	handItem = GetWorld()->SpawnActor<APickAxe>(SpawnParams);
+
+	if (IsValid(handItem))
+	{
+		viewHandItemSKM->SetSkeletalMesh(handItem->GetSkeletalMesh());
+		viewHandItemSKM->AttachToComponent(armMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, handItem->GetAttachPointSocketName());
+		// viewHandItemSKM->SetupAttachment(armMesh, handItem->GetAttachPointSocketName());
+		viewHandItemSKM->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	}
 
 	GetCharacterMovement()->MaxAcceleration = 100000.f;           // 가속 거의 즉시
 	GetCharacterMovement()->BrakingDecelerationWalking = 100000.f; // 즉시 멈춤
 	GetCharacterMovement()->GroundFriction = 100.f;   
 
-	// handItemMesh = GetWorld()->SpawnActor<AHandItem>(handItemClass);
-	//인벤토리가 아직 없기에 하드코딩
-	// AGun* SpawnedGun = GetWorld()->SpawnActor<AGun>(
-	// 	handItemClass,
-	// 	FVector::ZeroVector,
-	// 	FRotator::ZeroRotator
-	// );
-	// if (SpawnedGun)
-	// {
-	// 	SpawnedGun->AttachToComponent(
-	// 		armMesh,
-	// 		FAttachmentTransformRules::SnapToTargetIncludingScale,
-	// 		TEXT("ik_hand_gun")
-	// 	);
-	// 	UE_LOG(LogTemp, Log, TEXT("에러 ㄴ"))
-	//
-	// }
-	// else
-	// {
-	// 	UE_LOG(LogTemp, Log, TEXT("에러"))
-	// }
-	//
+	 
+	// 인벤토리가 아직 없기에 하드코딩
+	 /*AGun* SpawnedGun = GetWorld()->SpawnActor<AGun>(
+	 	handItemClass,
+	 	FVector::ZeroVector,
+	 	FRotator::ZeroRotator
+	 );
+	 if (SpawnedGun)
+	 {
+	 	SpawnedGun->AttachToComponent(
+	 		armMesh,
+	 		FAttachmentTransformRules::SnapToTargetIncludingScale,
+	 		TEXT("ik_hand_gun")
+	 	);
+	 	UE_LOG(LogTemp, Log, TEXT("에러 ㄴ"))
+	
+	 }
+	 else
+	 {
+	 	UE_LOG(LogTemp, Log, TEXT("에러"))
+	 }
+	*/
 
 	// 오브젝트 풀 만들기
-	for (int i=0;i<bulletPoolSize;i++)
-	{
-		// 총알 만들기
-		auto bullet = GetWorld()->SpawnActor<ARifleDefaultAmmo>(bulletFactory);
-		// 탄창에 넣기
-		bulletPool.Add(bullet);
-		// 총알 비활성화
-		bullet->SetActive(false);
-	}
-	
+	// for (int i=0;i<bulletPoolSize;i++)
+	// {
+	// 	// 총알 만들기
+	// 	auto bullet = GetWorld()->SpawnActor<ARifleDefaultAmmo>(bulletFactory);
+	// 	// 탄창에 넣기
+	// 	bulletPool.Add(bullet);
+	// 	// 총알 비활성화
+	// 	bullet->SetActive(false);
+	// }
+
+
 }
+
 
 // Called every frame
 void AMainPlayer::Tick(float DeltaTime)
@@ -272,6 +289,10 @@ void AMainPlayer::StopSprintInput(const struct FInputActionValue& value)
 void AMainPlayer::StartRightActionInput(const struct FInputActionValue& value)
 {
 	bIsRigthClicking = true;
+	if (IsValid(handItem))
+	{
+		handItem->RightAction();
+	}
 }
 
 void AMainPlayer::StopRightActionInput(const struct FInputActionValue& value)
@@ -286,9 +307,12 @@ void AMainPlayer::TriggerLeftActionInput(const struct FInputActionValue& value)
 	//첫 총알 발사 후 두번째 총알이 발사되기 전에 마우스좌클릭을 때면 HoldingShoot는 false가 된다.
 	// 마우스 좌클릭 눌림 → HoldingShoot true
 	bHoldingLeftClick = true;
-	armMesh->GetAnimInstance()->Montage_Play(fireMontage);
 
-	FireWeapon();
+	if (IsValid(handItem))
+	{
+		handItem->LeftAction();
+	}
+	armMesh->GetAnimInstance()->Montage_Play(handItem->GetLeftMontage());
 }
 
 void AMainPlayer::CompleteLeftActionInput(const struct FInputActionValue& value)
@@ -296,6 +320,15 @@ void AMainPlayer::CompleteLeftActionInput(const struct FInputActionValue& value)
 	bHoldingLeftClick = false;
 
 }
+
+void AMainPlayer::TriggerRKeyActionInput(const struct FInputActionValue& value)
+{
+	if (IsValid(handItem))
+	{
+		handItem->RKeyAction(0);
+	}
+}
+
 
 
 void AMainPlayer::PlayerControlCalculate()
@@ -351,15 +384,15 @@ void AMainPlayer::FireWeapon()
 			false
 		);
 		armMesh->GetAnimInstance()->Montage_Play(fireMontage);
-
-
+	
+	
 		// 총알 만들어서 발사시키기
 		auto firePosition = armMesh->GetSocketTransform(TEXT("headSocket"));
-
+	
 		// 탄창에서 가져와서 총알 발사하기
 		if (bulletPool.Num() > 0)
 		{
-
+	
 			auto bullet = bulletPool[0];
 			bullet->SetActorTransform(firePosition);
 			bullet->SetActive(true);
@@ -369,6 +402,26 @@ void AMainPlayer::FireWeapon()
 		
 	}
 	}
+}
+
+FTransform AMainPlayer::GetSocketTransform(FName SocketName) const
+{
+	if (USkeletalMeshComponent* MeshComp = viewHandItemSKM)
+	{
+		if (MeshComp->DoesSocketExist(SocketName))
+			return MeshComp->GetSocketTransform(SocketName);
+	}
+	return FTransform::Identity;
+}
+
+FTransform AMainPlayer::GetSocketTransform(FName SocketName) const
+{
+	if (USkeletalMeshComponent* MeshComp = viewHandItemSKM)
+	{
+		if (MeshComp->DoesSocketExist(SocketName))
+			return MeshComp->GetSocketTransform(SocketName);
+	}
+	return FTransform::Identity;
 }
 
 
