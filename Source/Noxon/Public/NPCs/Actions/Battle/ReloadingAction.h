@@ -17,5 +17,5 @@ class NOXON_API UReloadingAction : public UStateAction
 public:
 	virtual void OnBegin(ABaseNonPlayableCharacter* owner) override;
 	virtual void OnTick(ABaseNonPlayableCharacter* owner, float deltaTime) override;
-	virtual void End(ABaseNonPlayableCharacter* owner);
+	virtual void OnEnd(ABaseNonPlayableCharacter* owner) override;
 };

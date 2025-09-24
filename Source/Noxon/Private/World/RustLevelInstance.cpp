@@ -4,12 +4,23 @@
 #include "Public/World/RustLevelInstance.h"
 
 #include "GameFlow/GameMode/IngameGameState.h"
+#include "GameFlow/GameMode/IngameGameMode.h"
+#include "World/LevelStreamingManager.h"
+#include "Kismet/GameplayStatics.h"
 
 
 void ARustLevelInstance::BeginPlay()
 {
 	Super::BeginPlay();
 	progressData.firstEnterTime = GetWorld()->GetTimeSeconds();
+
+	if (AIngameGameMode* gameMode = Cast<AIngameGameMode>(UGameplayStatics::GetGameMode(GetWorld())))
+	{
+		if (ALevelStreamingManager* streamingManager = gameMode->GetLevelStreamingManager())
+		{
+			streamingManager->RegisterLevelInstance(this);
+		}
+	}
 }
 
 bool ARustLevelInstance::CheckCompleteConditions()
@@ -38,9 +49,16 @@ bool ARustLevelInstance::GetLevelCompleteConditions(TArray<FLevelCompleteConditi
 {
 	if (progressData.completeConditions.IsEmpty())
 	{
-		return false;
+		return true;
 	}
 	outConditions = progressData.completeConditions;
+	for (FLevelCompleteCondition condition : progressData.completeConditions)
+	{
+		if (!condition.IsCompleted())
+		{
+			return false;
+		}
+	}
 	return true;
 }
 

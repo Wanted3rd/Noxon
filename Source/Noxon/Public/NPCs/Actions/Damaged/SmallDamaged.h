@@ -6,6 +6,9 @@
 #include "NPCs/Actions/StateAction.h"
 #include "SmallDamaged.generated.h"
 
+class UParticleSystem;
+class USoundCue;
+
 /**
  * 
  */
@@ -19,5 +22,10 @@ public:
 	virtual void OnEnd(ABaseNonPlayableCharacter* owner) override;
 
 protected:
-	
+
+	UPROPERTY(EditDefaultsOnly, Category = "VFX")
+	TObjectPtr<UParticleSystem> bloodParticleSystem;
+
+	UPROPERTY(EditDefaultsOnly, Category = "SFX")
+	TObjectPtr<USoundBase> hitSound;
 };

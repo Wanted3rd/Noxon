@@ -620,8 +620,8 @@ FInventoryOpResult UInventory::UseItemAt(int32 SlotIndex)
 
     const FItemKey Key = Slots[SlotIndex].Key;
 
-    UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
-    UItemDBSubsystem* DB = GI ? GI->GetSubsystem<UItemDBSubsystem>() : nullptr;
+    UGameInstance* gi = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+    UItemDBSubsystem* DB = gi ? gi->GetSubsystem<UItemDBSubsystem>() : nullptr;
     if (!DB)
     {
         return FInventoryOpResult::Fail(EInventoryOpError::SlotBlocked);

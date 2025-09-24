@@ -21,7 +21,7 @@ struct FWorldProgressData
 	FVector lastPlayerLocation;
 
 	UPROPERTY()
-	FString lastActiveLevel;
+	FName lastActiveLevel;
 };
 
 UCLASS()
@@ -37,13 +37,29 @@ protected:
 public:
 	UFUNCTION(BlueprintCallable)
 	void UpdateLevelProgress(const FName& inLevelName, const FLevelProgressData& inProgressData);
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE FName GetActiveLevelName() {return worldProgress.lastActiveLevel;}
+
+	UFUNCTION(BlueprintCallable)
+	void SetActiveLevelName(const FName& levelName);
+
+	UFUNCTION(BlueprintCallable)
+	bool GetCurrentLevelQuests(TArray<FLevelCompleteCondition>& outConditions) const;
+
+	UFUNCTION(BlueprintCallable)
+	bool IsAllLevelsCleared() const;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnActiveLevelChanged, FName, newLevelName);
+	UPROPERTY(BlueprintAssignable)
+	FOnActiveLevelChanged OnActiveLevelChanged;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAllLevelsCleared);
+	UPROPERTY(BlueprintAssignable)
+	FOnAllLevelsCleared OnAllLevelsCleared;
 
 protected:
 	UPROPERTY()
 	FWorldProgressData worldProgress;
-	UPROPERTY(BlueprintReadOnly)
-	FName currentLevel;
 
 private:
-	FTimerHandle checkFinishTimer;
 };

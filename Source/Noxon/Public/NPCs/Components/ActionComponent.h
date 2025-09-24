@@ -37,8 +37,36 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	bool GetGoalLocation(FVector& outLocation);
-	
+
 	void RandPos();
+	void TogglePatrolFlag() {patrolFlag = !patrolFlag;}
+
+	UFUNCTION(BlueprintCallable)
+	float GetLastShootTime() const { return lastShootTime; }
+	UFUNCTION(BlueprintCallable)
+	void SetLastShootTime(float time) { lastShootTime = time; }
+	UFUNCTION(BlueprintCallable)
+	void ResetLastShootTime() { lastShootTime = 0.0f; }
+
+	UFUNCTION(BlueprintCallable)
+	float GetWeaveTime() const { return weaveTime; }
+	UFUNCTION(BlueprintCallable)
+	void SetWeaveTime(float time) { weaveTime = time; }
+	UFUNCTION(BlueprintCallable)
+	float GetWeaveDuration() const { return weaveDuration; }
+	UFUNCTION(BlueprintCallable)
+	void SetWeaveDuration(float duration) { weaveDuration = duration; }
+	UFUNCTION(BlueprintCallable)
+	FVector GetWeaveDirection() const { return weaveDirection; }
+	UFUNCTION(BlueprintCallable)
+	void SetWeaveDirection(const FVector& direction) { weaveDirection = direction; }
+
+	UFUNCTION(BlueprintCallable)
+	float GetReloadTime() const { return reloadTime; }
+	UFUNCTION(BlueprintCallable)
+	void SetReloadTime(float time) { reloadTime = time; }
+	UFUNCTION(BlueprintCallable)
+	void ResetReloadTime() { reloadTime = 0.0f; }
 
 protected:
 	UFUNCTION(BlueprintCallable)
@@ -67,5 +95,19 @@ protected:
 	TObjectPtr<ABaseNonPlayableCharacter> owner;
 	UPROPERTY()
 	FVector goalLocation = FVector::ZeroVector;
+	bool patrolFlag = false;
+
+	UPROPERTY()
+	float lastShootTime = 0.0f;
+
+	UPROPERTY()
+	float weaveTime = 0.0f;
+	UPROPERTY()
+	float weaveDuration = 0.0f;
+	UPROPERTY()
+	FVector weaveDirection = FVector::ZeroVector;
+
+	UPROPERTY()
+	float reloadTime = 0.0f;
 	
 };

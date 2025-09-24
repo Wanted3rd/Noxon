@@ -9,7 +9,7 @@
 
 //DECLARE_MULTICAST_DELEGATE(FOnLevelComplete);
 
-UCLASS()
+UCLASS(Blueprintable)
 class NOXON_API ARustLevelInstance : public ALevelInstance
 {
 	GENERATED_BODY()
