@@ -81,7 +81,7 @@ void APickAxe::LeftAction()
     }
 
     // 2) 카메라 위치/방향 얻기 (우선적으로 카메라 컴포넌트, 없으면 PlayerController camera fallback)
-    FVector CamLocation;
+    FVector CamLocation = FVector::ZeroVector;
     FVector CamForward;
 
     if (ACharacter* OwnerChar = Cast<ACharacter>(GetOwner()))
@@ -92,6 +92,7 @@ void APickAxe::LeftAction()
             CamLocation = CamComp->GetComponentLocation();
             CamForward = CamComp->GetForwardVector();
         }
+    	
     }
 
     // fallback: PlayerController의 camera (플레이어 컨트롤러가 있으면)

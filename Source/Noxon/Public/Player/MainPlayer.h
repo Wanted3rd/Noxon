@@ -142,8 +142,8 @@ public:
 	UFUNCTION()
 	void PlayerControlCalculate();
 
-	UFUNCTION()
-	void FireWeapon();
+	//UFUNCTION()
+	//void FireWeapon();
 
 	// UFUNCTION()
 	// void ResetFire();

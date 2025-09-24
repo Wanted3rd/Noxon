@@ -8,7 +8,6 @@
 #include "GameFramework/Character.h"
 
 
-class UCanvasPanelSlot;
 // Sets default values for this component's properties
 UCrosshair::UCrosshair()
 {
@@ -61,15 +60,16 @@ void UCrosshair::SetCrosshairPosition()
 	if (PC)
 	{
 		// 플레이어가 제어중인 방향
-		FVector ForwardVector = PC->GetControlRotation().Vector();
-		centerDirection = ForwardVector * 1;
+		
+		FVector controllerForwardVector = PC->GetControlRotation().Vector();
+		//centerDirection = ForwardVector * 1;
 
 		//카메라 위치, 회전 받아옴
 		FVector cameraLocation;
 		FRotator cameraRotation;
 		PC->GetPlayerViewPoint(cameraLocation,cameraRotation);
 
-		FVector crosshairLocation = ForwardVector + cameraLocation;
+		FVector crosshairLocation = controllerForwardVector + cameraLocation;
 		FVector2D ScreenPos;
 
 		//X, Y를 버리면 → 좌우/앞뒤 위치 정보가 사라져서, 화면상의 픽셀 위치를 못 구함.
@@ -79,8 +79,8 @@ void UCrosshair::SetCrosshairPosition()
 		centerPositionX = ScreenPos.X;
 		centerPositionY = ScreenPos.Y;
 
-		UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(CrosshairInstance);
-		CanvasSlot->SetPosition(ScreenPos);
+		//UCanvasPanelSlot* CanvasSlot = Cast<UCanvasPanelSlot>(CrosshairInstance);
+		//CanvasSlot->SetPosition(ScreenPos);
 		
 	}
 }

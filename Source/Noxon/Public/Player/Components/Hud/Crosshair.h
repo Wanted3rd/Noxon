@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "Crosshair.generated.h"
 
+class UCanvasPanelSlot;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class NOXON_API UCrosshair : public UActorComponent

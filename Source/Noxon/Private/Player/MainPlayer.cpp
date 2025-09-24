@@ -12,6 +12,7 @@
 #include "Items/HandItems/HandItem.h"
 #include "Items/HandItems/PickAxe.h"
 #include "Items/HandItems/RifleDemoGun.h"
+#include "Kismet/GameplayStatics.h"
 #include "Player/Components/Hud/HudComponent.h"
 #include "Utility/FindHelper.h"
 
@@ -163,6 +164,7 @@ void AMainPlayer::BeginPlay()
 	// AMainPlayer에서 총 스폰
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this; // 플레이어를 Owner로 지정
+	
 	// handItem = GetWorld()->SpawnActor<ARifleDemoGun>();
 	handItem = GetWorld()->SpawnActor<APickAxe>(SpawnParams);
 
@@ -363,7 +365,7 @@ void AMainPlayer::PlayerControlCalculate()
 	direction = FVector::ZeroVector;
 }
 
-void AMainPlayer::FireWeapon()
+/*void AMainPlayer::FireWeapon()
 {
 	if (HandItem != nullptr)
 	{
@@ -402,7 +404,7 @@ void AMainPlayer::FireWeapon()
 		
 	}
 	}
-}
+}*/
 
 FTransform AMainPlayer::GetSocketTransform(FName SocketName) const
 {
@@ -414,6 +416,7 @@ FTransform AMainPlayer::GetSocketTransform(FName SocketName) const
 	return FTransform::Identity;
 }
 
+/*
 FTransform AMainPlayer::GetSocketTransform(FName SocketName) const
 {
 	if (USkeletalMeshComponent* MeshComp = viewHandItemSKM)
@@ -423,6 +426,7 @@ FTransform AMainPlayer::GetSocketTransform(FName SocketName) const
 	}
 	return FTransform::Identity;
 }
+*/
 
 
 
